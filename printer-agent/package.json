@@ -1,0 +1,20 @@
+{
+  "name": "sisbenagil-print-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agente local de impresión para SisbenAgil",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js",
+    "test:print": "node test-print.js",
+    "check": "node --check agent.js && node --check lib/ticket-pdf.js && node --check lib/printer.js && node --check test-print.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "pdf-to-printer": "^5.8.1",
+    "pdfkit": "^0.20.2"
+  }
+}
