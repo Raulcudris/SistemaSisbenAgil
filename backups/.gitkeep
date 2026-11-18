@@ -1,0 +1,2 @@
+# Esta carpeta guarda las copias de seguridad (.sql.gz) generadas por el
+# servicio "backup" del stack Docker. Los archivos no se versionan.

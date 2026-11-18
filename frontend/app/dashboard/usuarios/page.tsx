@@ -1,7 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   KeyRound,
   Pencil,
@@ -16,6 +23,13 @@ import { api, ApiError, mensajeError } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { ROLES_ADMIN } from '@/lib/roles';
 import { useAuthGuard } from '@/lib/use-auth-guard';
+import {
+  USERNAME_AYUDA,
+  USERNAME_MAX,
+  USERNAME_MIN,
+  USERNAME_PATTERN,
+  validarUsername,
+} from '@/lib/username';
 import type { Rol, UsuarioAdmin } from '@/lib/types';
 import { AdminModal } from '@/components/AdminModal';
 import { Loading } from '@/components/Loading';
@@ -23,10 +37,6 @@ import { StaffShell } from '@/components/StaffShell';
 
 const INPUT =
   'w-full rounded-2xl border border-slate-200 bg-canvas px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-brand focus:bg-white';
-
-const USERNAME_REGEX = /^[a-zA-Z0-9._-]{4,60}$/;
-const MENSAJE_USERNAME =
-  'El usuario debe tener entre 4 y 60 caracteres: letras, números, punto, guion o guion bajo.';
 
 const ROL_ETIQUETA: Record<Rol, string> = {
   ADMIN: 'Administrador',
@@ -46,6 +56,56 @@ function Campo({ label, children }: { label: string; children: ReactNode }) {
       <span className="mb-1.5 block text-sm font-bold text-ink">{label}</span>
       {children}
     </label>
+  );
+}
+
+function EstadoUsername({
+  id,
+  valor,
+  tocado,
+  duplicado = false,
+}: {
+  id: string;
+  valor: string;
+  tocado: boolean;
+  duplicado?: boolean;
+}) {
+  const resultado = validarUsername(valor);
+
+  if (!valor.trim()) {
+    return (
+      <span
+        id={id}
+        className={`mt-1.5 block text-xs font-semibold ${tocado ? 'text-brand' : 'text-muted'}`}
+      >
+        {tocado ? 'Escriba un usuario de acceso.' : USERNAME_AYUDA}
+      </span>
+    );
+  }
+
+  if (!resultado.valido) {
+    return (
+      <span
+        id={id}
+        className={`mt-1.5 block text-xs font-semibold ${tocado ? 'text-brand' : 'text-muted'}`}
+      >
+        {tocado ? resultado.mensaje : USERNAME_AYUDA}
+      </span>
+    );
+  }
+
+  if (tocado && duplicado) {
+    return (
+      <span id={id} className="mt-1.5 block text-xs font-semibold text-brand">
+        Ese usuario ya existe. Elija otro nombre de acceso.
+      </span>
+    );
+  }
+
+  return (
+    <span id={id} className="mt-1.5 block text-xs font-semibold text-emerald-600">
+      Usuario válido · {resultado.username.length}/{USERNAME_MAX} caracteres
+    </span>
   );
 }
 
@@ -75,6 +135,8 @@ export default function UsuariosAdminPage() {
   });
   const [creando, setCreando] = useState(false);
   const [accionando, setAccionando] = useState<number | null>(null);
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const usernameRef = useRef<HTMLInputElement>(null);
 
   const [resetUser, setResetUser] = useState<UsuarioAdmin | null>(null);
   const [nuevaPassword, setNuevaPassword] = useState('');
@@ -83,7 +145,9 @@ export default function UsuariosAdminPage() {
   const [editUser, setEditUser] = useState<UsuarioAdmin | null>(null);
   const [editNombre, setEditNombre] = useState('');
   const [editUsername, setEditUsername] = useState('');
+  const [editUsernameTouched, setEditUsernameTouched] = useState(false);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const editUsernameRef = useRef<HTMLInputElement>(null);
 
   const cargar = useCallback(
     async (silencioso = false) => {
@@ -122,27 +186,44 @@ export default function UsuariosAdminPage() {
     if (!token) {
       return;
     }
+
+    setError(null);
+    setMensaje(null);
+
     const nombre = form.nombre.replace(/\s+/g, ' ').trim();
-    const username = form.username.trim();
+    const validacion = validarUsername(form.username);
+
     if (nombre.length < 2) {
       setError('El nombre y apellido deben tener al menos 2 caracteres.');
       return;
     }
-    if (!USERNAME_REGEX.test(username)) {
-      setError(MENSAJE_USERNAME);
+
+    if (!validacion.valido) {
+      setUsernameTouched(true);
+      usernameRef.current?.focus();
       return;
     }
+
+    const duplicado = usuarios.some(
+      (usuario) =>
+        usuario.username.toLowerCase() === validacion.username.toLowerCase(),
+    );
+    if (duplicado) {
+      setUsernameTouched(true);
+      usernameRef.current?.focus();
+      return;
+    }
+
     if (form.password.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
+
     setCreando(true);
-    setError(null);
-    setMensaje(null);
     try {
       const nuevo = await api.adminCrearUsuario(token, {
         nombre,
-        username,
+        username: validacion.username,
         password: form.password,
         rol: form.rol,
       });
@@ -150,6 +231,7 @@ export default function UsuariosAdminPage() {
         [...prev, nuevo].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
       );
       setForm({ nombre: '', username: '', password: '', rol: 'ASESOR' });
+      setUsernameTouched(false);
       setMensaje(`Usuario ${nuevo.username} creado correctamente.`);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
@@ -238,23 +320,40 @@ export default function UsuariosAdminPage() {
     if (!token || !editUser) {
       return;
     }
+
+    setError(null);
+    setMensaje(null);
+
     const nombre = editNombre.replace(/\s+/g, ' ').trim();
-    const username = editUsername.trim();
+    const validacion = validarUsername(editUsername);
+
     if (nombre.length < 2) {
       setError('El nombre y apellido deben tener al menos 2 caracteres.');
       return;
     }
-    if (!USERNAME_REGEX.test(username)) {
-      setError(MENSAJE_USERNAME);
+
+    if (!validacion.valido) {
+      setEditUsernameTouched(true);
+      editUsernameRef.current?.focus();
       return;
     }
+
+    const duplicado = usuarios.some(
+      (usuario) =>
+        usuario.id !== editUser.id &&
+        usuario.username.toLowerCase() === validacion.username.toLowerCase(),
+    );
+    if (duplicado) {
+      setEditUsernameTouched(true);
+      editUsernameRef.current?.focus();
+      return;
+    }
+
     setGuardandoEdicion(true);
-    setError(null);
-    setMensaje(null);
     try {
       const actualizado = await api.adminActualizarUsuario(token, editUser.id, {
         nombre,
-        username,
+        username: validacion.username,
       });
       setUsuarios((prev) =>
         prev
@@ -273,6 +372,7 @@ export default function UsuariosAdminPage() {
       }
       setMensaje(`Usuario actualizado: ${actualizado.nombre} (${actualizado.username}).`);
       setEditUser(null);
+      setEditUsernameTouched(false);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         cerrarSesion();
@@ -342,6 +442,23 @@ export default function UsuariosAdminPage() {
     [usuarios],
   );
 
+  const usernameValidacion = validarUsername(form.username);
+  const editUsernameValidacion = validarUsername(editUsername);
+  const usernameDuplicado =
+    usernameValidacion.valido &&
+    usuarios.some(
+      (usuario) =>
+        usuario.username.toLowerCase() === usernameValidacion.username.toLowerCase(),
+    );
+  const editUserId = editUser?.id;
+  const editUsernameDuplicado =
+    editUsernameValidacion.valido &&
+    usuarios.some(
+      (usuario) =>
+        usuario.id !== editUserId &&
+        usuario.username.toLowerCase() === editUsernameValidacion.username.toLowerCase(),
+    );
+
   if (!listo) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-canvas">
@@ -385,7 +502,7 @@ export default function UsuariosAdminPage() {
             registrado en los reportes.
           </p>
 
-          <form onSubmit={crear} className="mt-5 space-y-4">
+          <form onSubmit={crear} className="mt-5 space-y-4" noValidate>
             <Campo label="Nombre completo">
               <input
                 value={form.nombre}
@@ -402,17 +519,38 @@ export default function UsuariosAdminPage() {
 
             <Campo label="Usuario de acceso">
               <input
+                ref={usernameRef}
+                id="nuevo-username"
                 value={form.username}
                 onChange={(event) => {
                   setForm((prev) => ({ ...prev, username: event.target.value }));
                   setError(null);
                 }}
+                onBlur={() => setUsernameTouched(true)}
                 required
-                minLength={4}
-                maxLength={60}
+                minLength={USERNAME_MIN}
+                maxLength={USERNAME_MAX}
+                pattern={USERNAME_PATTERN}
                 autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-label="Usuario de acceso"
+                aria-invalid={
+                  usernameTouched && (!usernameValidacion.valido || usernameDuplicado)
+                }
+                aria-describedby="nuevo-username-ayuda"
                 placeholder="mperez o kiosco2"
-                className={INPUT}
+                className={`${INPUT} ${
+                  usernameTouched && (!usernameValidacion.valido || usernameDuplicado)
+                    ? 'border-brand focus:border-brand'
+                    : ''
+                }`}
+              />
+              <EstadoUsername
+                id="nuevo-username-ayuda"
+                valor={form.username}
+                tocado={usernameTouched}
+                duplicado={usernameDuplicado}
               />
             </Campo>
 
@@ -538,6 +676,7 @@ export default function UsuariosAdminPage() {
                               setEditUser(usuario);
                               setEditNombre(usuario.nombre);
                               setEditUsername(usuario.username);
+                              setEditUsernameTouched(false);
                               setResetUser(null);
                               setError(null);
                               setMensaje(null);
@@ -627,11 +766,12 @@ export default function UsuariosAdminPage() {
         onClose={() => {
           if (!guardandoEdicion) {
             setEditUser(null);
+            setEditUsernameTouched(false);
             setError(null);
           }
         }}
       >
-        <form onSubmit={guardarEdicion} className="space-y-4">
+        <form onSubmit={guardarEdicion} className="space-y-4" noValidate>
           <Campo label="Nombre y apellido">
             <input
               value={editNombre}
@@ -649,22 +789,41 @@ export default function UsuariosAdminPage() {
           </Campo>
           <Campo label="Usuario de acceso">
             <input
+              ref={editUsernameRef}
+              id="editar-username"
               value={editUsername}
               onChange={(event) => {
                 setEditUsername(event.target.value);
                 setError(null);
               }}
+              onBlur={() => setEditUsernameTouched(true)}
               required
-              minLength={4}
-              maxLength={60}
+              minLength={USERNAME_MIN}
+              maxLength={USERNAME_MAX}
+              pattern={USERNAME_PATTERN}
               autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              aria-label="Usuario de acceso"
+              aria-invalid={
+                editUsernameTouched &&
+                (!editUsernameValidacion.valido || editUsernameDuplicado)
+              }
+              aria-describedby="editar-username-ayuda"
               placeholder="mperez o kiosco2"
-              className={INPUT}
+              className={`${INPUT} ${
+                editUsernameTouched &&
+                (!editUsernameValidacion.valido || editUsernameDuplicado)
+                  ? 'border-brand focus:border-brand'
+                  : ''
+              }`}
             />
-            <span className="mt-1.5 block text-xs font-semibold text-muted">
-              Lo usa para iniciar sesión. Entre 4 y 60 letras, números, punto, guion o
-              guion bajo.
-            </span>
+            <EstadoUsername
+              id="editar-username-ayuda"
+              valor={editUsername}
+              tocado={editUsernameTouched}
+              duplicado={editUsernameDuplicado}
+            />
           </Campo>
           {error && (
             <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-brand">
@@ -676,6 +835,7 @@ export default function UsuariosAdminPage() {
               type="button"
               onClick={() => {
                 setEditUser(null);
+                setEditUsernameTouched(false);
                 setError(null);
               }}
               disabled={guardandoEdicion}
@@ -710,7 +870,7 @@ export default function UsuariosAdminPage() {
           }
         }}
       >
-        <form onSubmit={guardarPassword} className="space-y-4">
+        <form onSubmit={guardarPassword} className="space-y-4" noValidate>
           <Campo label="Nueva contraseña">
             <input
               type="password"

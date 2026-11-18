@@ -1,22 +1,21 @@
-import { Ticket } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const TAMANOS = {
   sm: {
-    caja: 'h-9 w-9 rounded-xl',
-    icono: 'h-5 w-5',
+    caja: 'h-9 w-9',
+    icono: 'h-9 w-9',
     titulo: 'text-xl',
     subtitulo: 'hidden',
   },
   md: {
-    caja: 'h-12 w-12 rounded-2xl',
-    icono: 'h-6 w-6',
+    caja: 'h-12 w-12',
+    icono: 'h-12 w-12',
     titulo: 'text-2xl',
     subtitulo: 'text-[9px]',
   },
   lg: {
-    caja: 'h-16 w-16 rounded-3xl',
-    icono: 'h-9 w-9',
+    caja: 'h-16 w-16',
+    icono: 'h-16 w-16',
     titulo: 'text-4xl md:text-5xl',
     subtitulo: 'text-[11px] md:text-xs',
   },
@@ -32,13 +31,13 @@ export function BrandLogo({ size = 'md', className }: BrandLogoProps) {
 
   return (
     <span className={cn('inline-flex items-center gap-3', className)}>
-      <span
-        className={cn(
-          'flex shrink-0 items-center justify-center bg-brand text-white shadow-sm print:bg-black',
-          t.caja,
-        )}
-      >
-        <Ticket className={t.icono} strokeWidth={2.2} aria-hidden />
+      <span className={cn('flex shrink-0 items-center justify-center', t.caja)}>
+        <img
+          src={size === 'sm' ? '/logos/digiturnos-icon-simple.svg' : '/logos/digiturnos-icon.svg'}
+          alt=""
+          aria-hidden
+          className={cn('block object-contain', t.icono)}
+        />
       </span>
       <span className="text-left leading-none">
         <span
@@ -47,7 +46,7 @@ export function BrandLogo({ size = 'md', className }: BrandLogoProps) {
             t.titulo,
           )}
         >
-          Sisben<span className="text-brand print:text-black">Agil</span>
+          Sisbén<span className="text-brand print:text-black">Ágil</span>
         </span>
         {size !== 'sm' && (
           <span
@@ -56,7 +55,7 @@ export function BrandLogo({ size = 'md', className }: BrandLogoProps) {
               t.subtitulo,
             )}
           >
-            Turnos SISBEN
+            Turnos SISBÉN
           </span>
         )}
       </span>

@@ -60,11 +60,13 @@ function fechaHora(iso?: string | null): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: true,
   });
 }
 
 function duracion(a: AtencionDetalle): string {
-  if (!a.fechaLlamado || !a.fechaSalida) {
+  const inicio = a.fechaInicioAtencion ?? a.fechaLlamado;
+  if (!inicio || !a.fechaSalida) {
     return '—';
   }
   return a.duracionMinutos > 0 ? `${a.duracionMinutos} min` : '< 1 min';
@@ -481,7 +483,7 @@ export default function AtencionesRealizadasPage() {
                     ? '< 1 min'
                     : '—'
               }
-              detail="Desde el llamado hasta finalizar"
+              detail="Desde el inicio de atención hasta finalizar"
               tone="emerald"
             />
           </div>
@@ -500,7 +502,7 @@ export default function AtencionesRealizadasPage() {
             </div>
 
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[1180px] text-left text-sm">
+              <table className="w-full min-w-[1280px] text-left text-sm">
                 <thead>
                   <tr className="text-xs font-black uppercase tracking-wide text-muted">
                     <th className="pb-3">Turno</th>
@@ -509,6 +511,7 @@ export default function AtencionesRealizadasPage() {
                     <th className="pb-3">Atendió</th>
                     <th className="pb-3">Kiosco</th>
                     <th className="pb-3">Llamado</th>
+                    <th className="pb-3">Inicio atención</th>
                     <th className="pb-3">Finalizado</th>
                     <th className="pb-3 text-right">Duración</th>
                   </tr>
@@ -582,6 +585,9 @@ export default function AtencionesRealizadasPage() {
                           {fechaHora(atencion.fechaLlamado)}
                         </td>
                         <td className="py-3 pr-4 text-xs font-semibold text-muted">
+                          {fechaHora(atencion.fechaInicioAtencion)}
+                        </td>
+                        <td className="py-3 pr-4 text-xs font-semibold text-muted">
                           {fechaHora(atencion.fechaSalida)}
                         </td>
                         <td className="py-3 text-right text-sm font-bold text-ink">
@@ -592,7 +598,7 @@ export default function AtencionesRealizadasPage() {
                   })}
                   {datos.items.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="py-10 text-center">
+                      <td colSpan={9} className="py-10 text-center">
                         <p className="text-lg font-bold text-ink">
                           No hay atenciones para estos filtros.
                         </p>

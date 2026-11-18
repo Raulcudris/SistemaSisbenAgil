@@ -11,13 +11,20 @@ const { imprimirTicket } = require('./lib/printer');
 
 const ticket = {
   codigo: 'TEST-001',
-  servicio: 'SISBEN',
+  servicio: 'SISBÉN',
   prioridadEtiqueta: 'Prueba de impresión',
   nivel: null,
   personasDelante: 0,
-  fechaTexto: new Date().toLocaleString('es-CO'),
-  mensaje: 'Prueba del agente local de impresión. Gracias por usar SisbenAgil.',
-  empresa: 'SisbenAgil',
+  fechaTexto: new Date().toLocaleString('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }),
+  mensaje: 'Prueba del agente local de impresión. Gracias por usar SisbénÁgil.',
+  empresa: 'SisbénÁgil',
   sede: 'Sede Principal',
 };
 

@@ -1,12 +1,12 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BellRing,
   Expand,
   Monitor,
   RotateCcw,
-  Ticket,
   Users,
   Volume2,
   VolumeX,
@@ -19,6 +19,27 @@ import type { TvLlamado, TvResumen } from '@/lib/types';
 const POLL_MS = 3000;
 const CLAVE_VOZ = 'sisbenagil.tv.voz';
 
+const LOGOS_INSTITUCIONALES = [
+  {
+    src: '/logos/alcaldia-valledupar.png',
+    alt: 'Alcaldía de Valledupar',
+    width: 1374,
+    height: 642,
+  },
+  {
+    src: '/logos/sisben.png',
+    alt: 'SISBÉN',
+    width: 1301,
+    height: 547,
+  },
+  {
+    src: '/logos/rui.png',
+    alt: 'RUI - Registro Universal de Ingresos',
+    width: 1095,
+    height: 386,
+  },
+] as const;
+
 const ESTILO_PRIORIDAD: Record<
   number,
   { badge: string; barra: string }
@@ -28,12 +49,13 @@ const ESTILO_PRIORIDAD: Record<
   3: { badge: 'bg-amber-500 text-slate-950', barra: 'bg-amber-400' },
 };
 
-function dosDigitos(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
 function hora(date: Date): string {
-  return `${dosDigitos(date.getHours())}:${dosDigitos(date.getMinutes())}:${dosDigitos(date.getSeconds())}`;
+  return date.toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
 }
 
 function fechaLarga(date: Date): string {
@@ -56,6 +78,11 @@ function codigoHablado(codigo: string): string {
     .replace(/^GN-/i, 'general ')
     .replace(/^JR-/i, 'jurídico ')
     .replace(/-/g, ' ');
+}
+
+/** Nombre completo listo para la voz; si no existe, no se agrega a la frase. */
+function nombreHablado(nombre?: string | null): string {
+  return nombre?.trim().replace(/\s+/g, ' ') ?? '';
 }
 
 function estilo(prioridad: number) {
@@ -181,9 +208,11 @@ export default function TvPage() {
       await campana();
       llamados.forEach((turno) => {
         const codigo = codigoHablado(turno.codigo);
+        const nombre = nombreHablado(turno.nombrePersona);
+        const identificacion = nombre ? `, ${nombre}` : '';
         hablar(
-          `Turno ${codigo}. Pase a ${turno.ventanilla}. ` +
-            `Repito, turno ${codigo}. Pase a ${turno.ventanilla}.`,
+          `Turno ${codigo}${identificacion}. Pase a ${turno.ventanilla}. ` +
+            `Repito, turno ${codigo}${identificacion}. Pase a ${turno.ventanilla}.`,
         );
       });
     },
@@ -341,17 +370,26 @@ export default function TvPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-white">
-      <header className="flex flex-wrap items-center justify-between gap-5 px-6 py-5 md:px-10">
+      <header className="flex flex-wrap items-center justify-between gap-5 px-6 py-4 md:px-10">
         <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-white shadow-lg shadow-brand/30">
-            <Ticket className="h-8 w-8" aria-hidden />
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg shadow-black/40 ring-1 ring-white/20">
+            <Image
+              src="/logos/digiturnos-icon.svg"
+              alt=""
+              aria-hidden
+              width={512}
+              height={512}
+              priority
+              unoptimized
+              className="h-full w-full object-contain"
+            />
           </span>
           <div>
             <p className="text-2xl font-black leading-none tracking-tight md:text-3xl">
-              Sisben<span className="text-brand">Agil</span>
+              Sisbén<span className="text-brand">Ágil</span>
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.32em] text-white/50 md:text-xs">
-              Turnos SISBEN
+              Turnos SISBÉN
             </p>
           </div>
         </div>
@@ -423,6 +461,33 @@ export default function TvPage() {
         </div>
       </header>
 
+      <section
+        aria-label="Entidades institucionales"
+        className="mx-auto mb-4 w-full max-w-6xl px-6 md:px-10"
+      >
+        <div className="overflow-hidden rounded-3xl bg-slate-50 shadow-[0_18px_50px_-20px_rgba(0,0,0,0.9)] ring-1 ring-white/20">
+          <div className="h-1 bg-gradient-to-r from-brand via-amber-400 to-sky-600" />
+          <div className="grid grid-cols-1 divide-y divide-slate-200/80 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            {LOGOS_INSTITUCIONALES.map((logo) => (
+              <div
+                key={logo.src}
+                className="flex items-center justify-center px-6 py-3 sm:py-4"
+              >
+                <Image
+                  src={logo.src}
+                  alt={logo.alt}
+                  width={logo.width}
+                  height={logo.height}
+                  priority
+                  unoptimized
+                  className="h-14 w-auto max-w-full object-contain md:h-16 2xl:h-20"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {vozActiva && !audioListo && (
         <div className="mx-auto mb-3 w-full max-w-5xl px-6">
           {soportado ? (
@@ -456,7 +521,7 @@ export default function TvPage() {
       )}
 
       <main className="mx-auto grid w-full max-w-[1700px] flex-1 gap-6 px-6 pb-8 md:px-10 lg:grid-cols-[1.45fr_0.55fr]">
-        <section className="relative flex min-h-[420px] flex-col justify-center overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-8 shadow-2xl md:p-12">
+        <section className="relative flex min-h-[420px] flex-col justify-center overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 px-8 py-5 shadow-2xl md:px-10 2xl:px-12 2xl:py-6">
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-brand via-amber-400 to-brand" />
 
           {ultimo ? (
@@ -473,21 +538,21 @@ export default function TvPage() {
                 </span>
               </div>
 
-              <p className="mt-8 text-[clamp(5rem,15vw,13rem)] font-black leading-[0.85] tracking-tighter">
+              <p className="mt-6 text-[clamp(5rem,15vw,13rem)] font-black leading-[0.85] tracking-tighter">
                 {ultimo.codigo}
               </p>
 
-              <p className="mt-6 text-xs font-black uppercase tracking-[0.22em] text-white/40 md:text-sm">
+              <p className="mt-5 text-xs font-black uppercase tracking-[0.22em] text-white/40 md:text-sm">
                 Nombre y apellido
               </p>
               <p className="mt-1 break-words text-3xl font-black leading-tight text-white md:text-5xl">
                 {ultimo.nombrePersona ?? 'Sin identificación'}
               </p>
 
-              <p className="mt-6 text-2xl font-bold text-white/60 md:text-3xl">Pase a</p>
+              <p className="mt-5 text-2xl font-bold text-white/60 md:text-3xl">Pase a</p>
               <p className="text-4xl font-black text-white md:text-6xl">{ultimo.ventanilla}</p>
 
-              <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-white/50">
+              <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-white/50">
                 <span>Llamado a las {hora(new Date(ultimo.fechaLlamado))}</span>
                 {ultimo.llamados > 1 && <span>{ultimo.llamados} llamados</span>}
               </div>
@@ -576,7 +641,7 @@ export default function TvPage() {
       </main>
 
       <footer className="border-t border-white/10 px-6 py-4 text-center text-xs font-semibold text-white/40 md:px-10">
-        SisbenAgil · Pantalla de sala de espera · Actualización automática cada 3 segundos
+        SisbénÁgil · Pantalla de sala de espera · Actualización automática cada 3 segundos
       </footer>
     </div>
   );

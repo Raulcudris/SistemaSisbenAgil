@@ -114,6 +114,7 @@ export interface TurnoAtencion {
   tipoDocumento?: TipoDocumento | null;
   fechaCreacion: string;
   fechaLlamado?: string | null;
+  fechaInicioAtencion?: string | null;
   fechaSalida?: string | null;
   llamados: number;
   ventanilla?: string | null;
@@ -166,6 +167,7 @@ export interface VentanillaResumen {
   estado: string;
   turnoActual?: string | null;
   fechaLlamado?: string | null;
+  fechaInicioAtencion?: string | null;
   atendidos: number;
   ausentes: number;
   atencionPromedioMin: number;
@@ -220,6 +222,7 @@ export interface VentanillaAdmin {
   activa: boolean;
   estado: 'Libre' | 'Ocupada' | 'Inactiva' | string;
   turnoActual?: string | null;
+  fechaLlamado?: string | null;
   atendidosHoy: number;
 }
 
@@ -275,6 +278,7 @@ export interface AtencionDetalle {
   fechaOperacion: string;
   fechaCreacion: string;
   fechaLlamado?: string | null;
+  fechaInicioAtencion?: string | null;
   fechaSalida?: string | null;
   duracionMinutos: number;
   llamados: number;
@@ -305,6 +309,36 @@ export interface AtencionesPage {
   totalVentanillas: number;
   duracionPromedioMin: number;
   items: AtencionDetalle[];
+}
+
+/* ---- Cola visible para el operador del kiosco ---- */
+
+export interface KioscoColaItem {
+  turnoId: number;
+  codigo: string;
+  nombrePersona?: string | null;
+  prioridad: number;
+  prioridadEtiqueta: string;
+  fechaCreacion: string;
+  esperaMin: number;
+  fechaLlamado?: string | null;
+  ventanilla?: string | null;
+  ventanillaCodigo?: string | null;
+}
+
+export interface KioscoVentanillaLibre {
+  id: number;
+  codigo: string;
+  nombre: string;
+}
+
+export interface KioscoCola {
+  actualizado: string;
+  enEspera: number;
+  espera: KioscoColaItem[];
+  ausentes: number;
+  ausentesHoy: KioscoColaItem[];
+  ventanillasLibres: KioscoVentanillaLibre[];
 }
 
 /* ---- Pantalla de sala de espera (TV) ---- */

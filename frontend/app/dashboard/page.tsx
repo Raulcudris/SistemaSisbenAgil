@@ -42,7 +42,11 @@ function hora(iso?: string | null): string {
   if (!iso) {
     return '—';
   }
-  return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
 }
 
 function minutos(valor: number): string {
@@ -180,7 +184,7 @@ export default function DashboardPage() {
   return (
     <StaffShell
       title="Dashboard"
-      subtitle="Operación de turnos SISBEN en tiempo real"
+      subtitle="Operación de turnos SISBÉN en tiempo real"
       actions={
         <>
           <a
@@ -213,7 +217,13 @@ export default function DashboardPage() {
           </button>
           {actualizado && (
             <span className="text-xs font-semibold text-muted">
-              Actualizado {actualizado.toLocaleTimeString('es-CO')}
+              Actualizado{' '}
+              {actualizado.toLocaleTimeString('es-CO', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+              })}
             </span>
           )}
         </>
@@ -281,7 +291,7 @@ export default function DashboardPage() {
               icon={<Timer className="h-5 w-5" />}
               label="Atención promedio"
               value={minutos(resumen.atencionPromedioMin)}
-              detail="Desde el llamado hasta el cierre"
+              detail="Desde el inicio de atención hasta el cierre"
               tone="brand"
             />
           </div>
@@ -362,9 +372,11 @@ export default function DashboardPage() {
                       </td>
                       <td className="py-3 font-mono font-bold text-ink">
                         {ventanilla.turnoActual ?? '—'}
-                        {ventanilla.turnoActual && ventanilla.fechaLlamado && (
+                        {ventanilla.turnoActual && (
                           <span className="ml-2 font-sans text-xs font-semibold text-muted">
-                            {duracion(transcurridoDesde(ventanilla.fechaLlamado))}
+                            {ventanilla.fechaInicioAtencion
+                              ? duracion(transcurridoDesde(ventanilla.fechaInicioAtencion))
+                              : 'Llamado'}
                           </span>
                         )}
                       </td>

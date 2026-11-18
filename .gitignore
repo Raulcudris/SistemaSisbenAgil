@@ -21,3 +21,14 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Entorno de despliegue (contiene contraseñas y el secreto JWT)
+.env
+.env.prod
+
+# Copias de seguridad de la base de datos
+backups/*
+!backups/.gitkeep
+
+# Paquete de despliegue generado
+dist/

@@ -1,4 +1,4 @@
-# Agente local de impresión SisbenAgil
+# Agente local de impresión SisbénÁgil
 
 Servicio HTTP que se ejecuta en el mismo equipo del kiosco. Recibe los datos del
 ticket desde el frontend, genera un PDF de **72 mm × 210 mm** y lo envía a la
@@ -81,13 +81,13 @@ Ejemplo de cuerpo para `POST /print`:
 ```json
 {
   "codigo": "GN-001",
-  "servicio": "SISBEN",
+  "servicio": "SISBÉN",
   "prioridadEtiqueta": "General",
   "nivel": null,
   "personasDelante": 2,
   "fechaTexto": "22/10/2026, 10:30 a. m.",
-  "mensaje": "Gracias por usar SisbenAgil. Espere su turno en la sala.",
-  "empresa": "SisbenAgil",
+  "mensaje": "Gracias por usar SisbénÁgil. Espere su turno en la sala.",
+  "empresa": "SisbénÁgil",
   "sede": "Sede Principal"
 }
 ```
@@ -109,7 +109,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\instalar-agente-inic
 ```
 
 Crea un acceso directo minimizado en la carpeta de Inicio del usuario. Para
-quitarlo, elimine el acceso directo **SisbenAgil Agente de Impresion** de
+quitarlo, elimine el acceso directo **SisbénÁgil Agente de Impresion** de
 `shell:startup`.
 
 ## Diagnóstico

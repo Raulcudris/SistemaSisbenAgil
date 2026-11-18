@@ -1,0 +1,27 @@
+# Overlay OPCIONAL para inspeccionar la base de Digiturno con DBeaver u otro
+# cliente MySQL. NO forma parte del despliegue normal.
+#
+# Uso en el servidor:
+#   docker compose -f docker-compose.server.yml -f docker-compose.dbeaver.yml --env-file .env up -d digiturno-db
+#
+# Por defecto publica MySQL SOLO en 127.0.0.1:3308 del servidor.
+#
+# Si DBeaver está en OTRO PC de la red, en el .env del servidor agregue:
+#   DB_VIEW_BIND=0.0.0.0
+# y abra el puerto 3308 en el firewall SOLO en una red de confianza:
+#   New-NetFirewallRule -DisplayName "Digiturno MySQL temporal" -Direction Inbound -Protocol TCP -LocalPort 3308 -Action Allow
+#
+# Datos de conexión en DBeaver (driver MySQL 8+):
+#   Host      : 127.0.0.1  (o la IP del servidor si DB_VIEW_BIND=0.0.0.0)
+#   Puerto    : 3308
+#   Base      : dispensamaster
+#   Usuario   : dispensamaster
+#   Contraseña: el valor de DB_PASSWORD en .env
+#
+# Para cerrar el acceso, vuelva a levantar sin este overlay:
+#   docker compose -f docker-compose.server.yml --env-file .env up -d digiturno-db
+
+services:
+  digiturno-db:
+    ports:
+      - "${DB_VIEW_BIND:-127.0.0.1}:${DB_VIEW_PORT:-3308}:3306"

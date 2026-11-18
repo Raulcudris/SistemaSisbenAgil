@@ -6,6 +6,7 @@ import {
   Accessibility,
   ArrowRight,
   Heart,
+  Loader2,
   Scale,
   Ticket,
   UserRound,
@@ -29,11 +30,22 @@ const PRIORIDAD = {
   JURIDICO: 3,
 } as const;
 
+const MOTIVO_ETIQUETA: Record<MotivoPrioridad, string> = {
+  EMBARAZADA: 'Embarazada',
+  ADULTO_MAYOR: 'Adulto mayor',
+  DISCAPACITADO: 'Discapacitado',
+};
+
 interface ErrorTurno {
   codigo: string;
   titulo: string;
   mensaje: string;
   fatal: boolean;
+}
+
+interface SeleccionTurno {
+  prioridad?: number;
+  motivo?: MotivoPrioridad;
 }
 
 export default function PrioridadesPage() {
@@ -47,6 +59,7 @@ export default function PrioridadesPage() {
   const persona = state.persona;
 
   const [enviando, setEnviando] = useState(false);
+  const [seleccion, setSeleccion] = useState<SeleccionTurno | null>(null);
   const [error, setError] = useState<ErrorTurno | null>(null);
 
   const listo = useGuard(hydrated, Boolean(config) && Boolean(servicio));
@@ -73,6 +86,7 @@ export default function PrioridadesPage() {
       router.replace('/');
       return;
     }
+    setSeleccion({ prioridad, motivo });
     setEnviando(true);
     setError(null);
     try {
@@ -89,7 +103,11 @@ export default function PrioridadesPage() {
       );
       update({ ticket });
       go('/ticket');
+      // El loading sigue visible hasta que el ticket termina de montarse.
     } catch (e) {
+      setEnviando(false);
+      setSeleccion(null);
+
       if (e instanceof ApiError && e.status === 401) {
         cerrarSesion();
         router.replace('/');
@@ -127,8 +145,6 @@ export default function PrioridadesPage() {
           fatal: false,
         });
       }
-    } finally {
-      setEnviando(false);
     }
   };
 
@@ -137,12 +153,24 @@ export default function PrioridadesPage() {
       ? persona.nombreCompleto
       : 'Sin identificación';
 
+  const tipoTurno = servicio.seleccionaPrioridad
+    ? seleccion?.prioridad === PRIORIDAD.PRIORITARIO
+      ? `turno prioritario${seleccion.motivo ? ` · ${MOTIVO_ETIQUETA[seleccion.motivo]}` : ''}`
+      : seleccion?.prioridad === PRIORIDAD.JURIDICO
+        ? 'turno jurídico'
+        : 'turno general'
+    : servicio.requiereCita
+      ? 'turno con cita'
+      : 'turno general';
+
   return (
     <KioskShell
       center={false}
+      badge="Paso 2 de 3"
       title={servicio.seleccionaPrioridad ? 'Seleccione su turno' : 'Confirmar turno'}
       subtitle={servicio.nombre}
       backHref="/cedula"
+      footer="SisbénÁgil · Selección de turno"
     >
       <div className="mx-auto w-full max-w-5xl">
         <div className="mb-8 flex flex-col items-center justify-between gap-4 rounded-3xl bg-white p-6 shadow-kiosk sm:flex-row">
@@ -307,8 +335,24 @@ export default function PrioridadesPage() {
       </div>
 
       {enviando && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/70 backdrop-blur-sm">
-          <Loading label="Generando su turno…" />
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-6 backdrop-blur-sm"
+          role="status"
+          aria-live="assertive"
+          aria-busy="true"
+        >
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-card">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-brand-light">
+              <Loader2 className="h-10 w-10 animate-spin text-brand" aria-hidden />
+            </div>
+            <h2 className="mt-6 text-3xl font-black text-ink">Generando su turno</h2>
+            <p className="mt-3 text-lg leading-relaxed text-muted">
+              Estamos generando su {tipoTurno}. Espere un momento…
+            </p>
+            <p className="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-muted">
+              No cierre esta pantalla
+            </p>
+          </div>
         </div>
       )}
 

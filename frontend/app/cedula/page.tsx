@@ -1,7 +1,14 @@
 'use client';
 
 import { useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, ChevronDown, CreditCard, FileText, UserRound } from 'lucide-react';
+import {
+  ArrowRight,
+  ChevronDown,
+  CreditCard,
+  FileText,
+  ShieldCheck,
+  UserRound,
+} from 'lucide-react';
 import { api, mensajeError } from '@/lib/api';
 import { TIPOS_DOCUMENTO, documentoAlfanumerico } from '@/lib/documentos';
 import { useKiosk } from '@/lib/kiosk-context';
@@ -12,6 +19,13 @@ import { Modal } from '@/components/Modal';
 import { useDeferredPush } from '@/lib/use-deferred-push';
 import { useGuard } from '@/lib/use-guard';
 import { useKioskAuth } from '@/lib/use-kiosk-auth';
+
+function normalizarNombreServicio(nombre: string): string {
+  return nombre
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}
 
 export default function CedulaPage() {
   const go = useDeferredPush();
@@ -119,10 +133,11 @@ export default function CedulaPage() {
 
       const servicios = await api.servicios();
       const servicio =
-        servicios.find((s) => s.nombre.toUpperCase() === 'SISBEN') ?? servicios[0];
+        servicios.find((s) => normalizarNombreServicio(s.nombre) === 'SISBEN') ??
+        servicios[0];
 
       if (!servicio) {
-        throw new Error('No hay un servicio SISBEN configurado.');
+        throw new Error('No hay un servicio SISBÉN configurado.');
       }
 
       update({
@@ -143,15 +158,20 @@ export default function CedulaPage() {
 
   return (
     <KioskShell
-      center={false}
+      badge="Paso 1 de 3"
       title="Identifíquese"
-      subtitle="Digite su documento y presione Enter para buscar su nombre"
+      subtitle="Digite su documento para consultar o registrar sus datos."
       backHref="/"
+      footer="SisbénÁgil · Kiosco de autoservicio"
     >
-      <form onSubmit={continuar} className="mx-auto w-full max-w-3xl">
-        <div className="rounded-3xl bg-white p-7 shadow-kiosk md:p-9">
-          <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+      <form onSubmit={continuar} className="mx-auto w-full max-w-4xl">
+        <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-card sm:p-7 md:p-8">
+          <div
+            aria-hidden
+            className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-brand via-brand to-ink"
+          />
+          <div className="space-y-5">
+            <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <label
                   htmlFor="tipoDocumento"
@@ -181,7 +201,7 @@ export default function CedulaPage() {
                       setError(null);
                     }}
                     disabled={buscando}
-                    className="w-full appearance-none rounded-2xl border-2 border-slate-200 bg-canvas py-5 pl-16 pr-11 text-lg font-bold text-ink outline-none transition focus:border-brand focus:bg-white disabled:opacity-60"
+                    className="w-full appearance-none rounded-2xl border-2 border-slate-200 bg-canvas py-4 pl-16 pr-11 text-lg font-bold text-ink outline-none transition focus:border-brand focus:bg-white disabled:opacity-60"
                   >
                     {TIPOS_DOCUMENTO.map((tipo) => (
                       <option key={tipo.value} value={tipo.value}>
@@ -239,7 +259,7 @@ export default function CedulaPage() {
                     maxLength={esAlfanumerico ? 30 : 15}
                     placeholder="Documento"
                     disabled={buscando}
-                    className="w-full rounded-2xl border-2 border-slate-200 bg-canvas py-5 pl-16 pr-5 text-2xl font-bold text-ink outline-none transition placeholder:text-slate-400 focus:border-brand focus:bg-white disabled:opacity-60"
+                    className="w-full rounded-2xl border-2 border-slate-200 bg-canvas py-4 pl-16 pr-5 text-2xl font-bold text-ink outline-none transition placeholder:text-slate-400 focus:border-brand focus:bg-white disabled:opacity-60"
                   />
                 </div>
                 {esAlfanumerico && (
@@ -247,8 +267,8 @@ export default function CedulaPage() {
                     Puede escribir letras y números.
                   </p>
                 )}
-                <p className="mt-2 text-sm text-muted">
-                  Presione Enter para buscar el nombre registrado.
+                <p className="mt-1.5 text-sm text-muted">
+                  Presione Enter para buscar su nombre.
                 </p>
               </div>
             </div>
@@ -277,17 +297,15 @@ export default function CedulaPage() {
                   maxLength={80}
                   placeholder="Nombre y apellidos"
                   disabled={buscando}
-                  className={`w-full rounded-2xl border-2 py-5 pl-16 pr-5 text-2xl font-bold outline-none transition placeholder:text-slate-400 focus:bg-white disabled:opacity-60 ${
+                  className={`w-full rounded-2xl border-2 py-4 pl-16 pr-5 text-2xl font-bold outline-none transition placeholder:text-slate-400 focus:bg-white disabled:opacity-60 ${
                     personaEncontrada
                       ? 'border-emerald-300 bg-white text-emerald-900 focus:border-emerald-500'
                       : 'border-slate-200 bg-canvas text-ink focus:border-brand'
                   }`}
                 />
               </div>
-              <p className="mt-2 text-sm text-muted">
-                Si ya está registrado, su nombre y apellido se completan
-                automáticamente. Puede corregirlos; se guardarán en mayúsculas
-                al continuar.
+              <p className="mt-1.5 text-sm text-muted">
+                Si está registrado, se completa automáticamente. Puede corregirlo.
               </p>
             </div>
 
@@ -324,11 +342,16 @@ export default function CedulaPage() {
           <button
             type="submit"
             disabled={buscando}
-            className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-brand px-8 py-5 text-xl font-bold text-white shadow-card transition hover:bg-brand-dark active:scale-[0.99] disabled:opacity-60"
+            className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl bg-brand px-8 py-4 text-xl font-bold text-white shadow-card transition hover:bg-brand-dark active:scale-[0.99] disabled:opacity-60"
           >
             {buscando ? 'Consultando…' : 'Continuar'}
             {!buscando && <ArrowRight className="h-6 w-6" aria-hidden />}
           </button>
+
+          <p className="mt-4 flex items-center justify-center gap-2 text-center text-sm font-semibold text-muted">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+            Sus datos se usan únicamente para generar el turno.
+          </p>
         </div>
       </form>
 

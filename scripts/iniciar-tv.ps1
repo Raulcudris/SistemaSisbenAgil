@@ -1,4 +1,4 @@
-# Inicia la pantalla TV de SisbenAgil en modo kiosco con el audio siempre activo.
+﻿# Inicia la pantalla TV de SisbénÁgil en modo kiosco con el audio siempre activo.
 # El flag --autoplay-policy=no-user-gesture-required permite que la campana y la
 # voz suenen desde el arranque, sin tener que pulsar "activar sonido".
 param(

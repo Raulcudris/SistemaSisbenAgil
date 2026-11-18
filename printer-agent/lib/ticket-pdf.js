@@ -39,8 +39,8 @@ async function crearPdfTicket(ticket, rutaSalida) {
     autoFirstPage: true,
     info: {
       Title: `Turno ${ticket.codigo}`,
-      Author: 'SisbenAgil',
-      Subject: 'Ticket de turno SISBEN',
+      Author: 'SisbénÁgil',
+      Subject: 'Ticket de turno SISBÉN',
     },
   });
 
@@ -63,11 +63,11 @@ async function crearPdfTicket(ticket, rutaSalida) {
   };
 
   doc.fillColor('#111827').font('Helvetica-Bold').fontSize(18);
-  centrar('SisbenAgil');
+  centrar('SisbénÁgil');
 
   y += mm(0.5);
   doc.font('Helvetica-Bold').fontSize(6.5).fillColor('#4b5563');
-  centrar('TURNOS SISBEN', { characterSpacing: 1.2 });
+  centrar('TURNOS SISBÉN', { characterSpacing: 1.2 });
 
   y += mm(3);
   linea(doc, y, false);
@@ -122,7 +122,7 @@ async function crearPdfTicket(ticket, rutaSalida) {
 
   y += mm(0.5);
   doc.font('Helvetica-Bold').fontSize(7);
-  centrar('Turnos SISBEN');
+  centrar('Turnos SISBÉN');
 
   doc.end();
   await finalizado;

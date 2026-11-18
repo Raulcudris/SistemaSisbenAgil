@@ -1,0 +1,123 @@
+﻿# Despliegue en el SERVIDOR usando las imÃ¡genes ya publicadas en Docker Hub.
+# No compila nada: el servidor no necesita el cÃ³digo fuente del backend ni del
+# frontend, solo este archivo, .env, scripts/ y backups/.
+#
+#   docker compose -f docker-compose.server.yml --env-file .env pull
+#   docker compose -f docker-compose.server.yml --env-file .env up -d
+#
+# Las imÃ¡genes se construyen y publican desde el equipo de desarrollo con
+# scripts\publicar-imagenes.ps1 (ver README, secciÃ³n 11).
+
+name: digiturno
+
+services:
+  digiturno-db:
+    image: mysql:8.0
+    container_name: digiturno-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Defina MYSQL_ROOT_PASSWORD en .env}
+      MYSQL_DATABASE: ${DB_NAME:-dispensamaster}
+      MYSQL_USER: ${DB_USER:-dispensamaster}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD en .env}
+      TZ: America/Bogota
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  digiturno-backup:
+    image: mysql:8.0
+    container_name: digiturno-backup
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "/scripts/backup-loop.sh"]
+    environment:
+      DB_HOST: digiturno-db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-dispensamaster}
+      DB_USER: ${DB_USER:-dispensamaster}
+      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD en .env}
+      BACKUP_SCHEDULE_TIME: ${BACKUP_SCHEDULE_TIME:-02:00}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      TZ: America/Bogota
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts:ro
+    depends_on:
+      digiturno-db:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  digiturno-backend:
+    image: ${DOCKERHUB_USERNAME:-raulcudris}/digiturno-backend:${BACKEND_VERSION:-2.0.2}
+    container_name: digiturno-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: digiturno-db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-dispensamaster}
+      DB_USER: ${DB_USER:-dispensamaster}
+      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD en .env}
+      DB_INIT_FAIL_TIMEOUT_MS: "60000"
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?Defina APP_JWT_SECRET en .env (mÃ­nimo 32 caracteres)}
+      APP_JWT_HOURS: ${APP_JWT_HOURS:-12}
+      APP_CORS_ALLOWED_ORIGIN_PATTERNS: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:-http://localhost:[*],http://127.0.0.1:[*],http://192.168.*.*:[*],http://10.*.*.*:[*],http://172.*.*.*:[*]}
+      TZ: America/Bogota
+    depends_on:
+      digiturno-db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8088}:8088"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8088/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  digiturno-frontend:
+    image: ${DOCKERHUB_USERNAME:-raulcudris}/digiturno-frontend:${FRONTEND_VERSION:-2.0.2}
+    container_name: digiturno-frontend
+    restart: unless-stopped
+    environment:
+      TZ: America/Bogota
+    depends_on:
+      digiturno-backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-3001}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mysql_data:

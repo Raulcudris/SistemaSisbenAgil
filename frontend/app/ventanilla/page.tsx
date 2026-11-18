@@ -8,6 +8,7 @@ import {
   Lock,
   Megaphone,
   Monitor,
+  PlayCircle,
   RefreshCw,
   Search,
   Timer,
@@ -32,11 +33,21 @@ const COLORES_TIPO: Record<number, string> = {
   3: 'bg-amber-500 text-white',
 };
 
+const GRUPOS_COLA = [
+  { prioridad: 1, codigo: 'PR', nombre: 'Prioritarios', detalle: 'Pasan primero' },
+  { prioridad: 2, codigo: 'GN', nombre: 'Generales', detalle: 'Orden de llegada' },
+  { prioridad: 3, codigo: 'JR', nombre: 'Jurídicos', detalle: 'Orden de llegada' },
+] as const;
+
 function hora(iso?: string | null): string {
   if (!iso) {
     return '—';
   }
-  return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
 }
 
 function espera(minutos: number): string {
@@ -160,8 +171,9 @@ export default function VentanillaPage() {
     return () => clearInterval(id);
   }, [listo, requiereSeleccion, cargarVentanillas]);
 
-  // Cronómetro de atención: cuenta desde el llamado del turno actual.
-  const inicioAtencion = estado?.actual?.fechaLlamado ?? null;
+  // Cronómetro de atención: cuenta desde que se pulsa "Iniciar atención".
+  const inicioAtencion = estado?.actual?.fechaInicioAtencion ?? null;
+  const atencionIniciada = Boolean(inicioAtencion);
   useEffect(() => {
     if (!inicioAtencion) {
       setTranscurrido(0);
@@ -188,8 +200,26 @@ export default function VentanillaPage() {
     );
   }, [estado?.siguientes, filtro]);
 
+  const colasPorTipo = useMemo(() => {
+    const totales: Record<number, number> = {
+      1: estado?.prioritariosEnEspera ?? 0,
+      2: estado?.generalesEnEspera ?? 0,
+      3: estado?.juridicosEnEspera ?? 0,
+    };
+    return GRUPOS_COLA.map((grupo) => ({
+      ...grupo,
+      total: totales[grupo.prioridad] ?? 0,
+      items: siguientesFiltrados.filter((item) => item.prioridad === grupo.prioridad),
+    }));
+  }, [
+    estado?.prioritariosEnEspera,
+    estado?.generalesEnEspera,
+    estado?.juridicosEnEspera,
+    siguientesFiltrados,
+  ]);
+
   const accion = async (
-    tipo: 'llamar' | 'atender' | 'ausente' | 'rellamar',
+    tipo: 'llamar' | 'iniciar' | 'atender' | 'ausente' | 'rellamar',
     turnoId?: number,
   ) => {
     if (!token || !ventanillaId || accionando) {
@@ -202,12 +232,18 @@ export default function VentanillaPage() {
       let data: VentanillaEstado;
       if (tipo === 'llamar') {
         data = await api.ventanillaLlamar(token, ventanillaId, turnoId);
+      } else if (tipo === 'iniciar' && actual) {
+        data = await api.ventanillaIniciarAtencion(token, ventanillaId, actual.id);
       } else if (tipo === 'atender' && actual) {
         data = await api.ventanillaAtender(token, ventanillaId, actual.id);
       } else if (tipo === 'ausente' && actual) {
         data = await api.ventanillaAusente(token, ventanillaId, actual.id);
-      } else if (tipo === 'rellamar' && actual) {
-        data = await api.ventanillaRellamar(token, ventanillaId, actual.id);
+      } else if (tipo === 'rellamar') {
+        const turnoARellamar = turnoId ?? actual?.id;
+        if (!turnoARellamar) {
+          return;
+        }
+        data = await api.ventanillaRellamar(token, ventanillaId, turnoARellamar);
       } else {
         return;
       }
@@ -309,8 +345,11 @@ export default function VentanillaPage() {
 
                   {ocupada ? (
                     <p className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-                      Atendiendo {v.turnoActual ?? 'un turno'} ·{' '}
-                      {duracion(transcurridoDesde(v.fechaLlamado))}
+                      {v.fechaInicioAtencion
+                        ? `Atendiendo ${v.turnoActual ?? 'un turno'} · ${duracion(
+                            transcurridoDesde(v.fechaInicioAtencion),
+                          )}`
+                        : `Llamado ${v.turnoActual ?? 'un turno'} · esperando inicio`}
                     </p>
                   ) : (
                     <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
@@ -341,8 +380,8 @@ export default function VentanillaPage() {
       title="Ventanilla"
       subtitle={
         estado?.ventanilla
-          ? `${estado.ventanilla} · atención de turnos SISBEN`
-          : 'Atención de turnos SISBEN'
+          ? `${estado.ventanilla} · atención de turnos SISBÉN`
+          : 'Atención de turnos SISBÉN'
       }
       mostrarVentanilla
       actions={
@@ -358,7 +397,13 @@ export default function VentanillaPage() {
           </button>
           {actualizado && (
             <span className="text-xs font-semibold text-muted">
-              Actualizado {actualizado.toLocaleTimeString('es-CO')}
+              Actualizado{' '}
+              {actualizado.toLocaleTimeString('es-CO', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+              })}
             </span>
           )}
         </>
@@ -380,8 +425,17 @@ export default function VentanillaPage() {
               {estado?.actual ? (
                 <div className="rounded-3xl bg-ink p-7 text-white shadow-card">
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-xs font-black uppercase tracking-[0.25em] text-white/70">
-                      En atención
+                    <span
+                      className={`inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.25em] ${
+                        atencionIniciada ? 'text-emerald-300' : 'text-amber-300'
+                      }`}
+                    >
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          atencionIniciada ? 'bg-emerald-400' : 'bg-amber-400'
+                        }`}
+                      />
+                      {atencionIniciada ? 'En atención' : 'Llamado'}
                     </span>
                     <span className="rounded-full bg-white/15 px-4 py-1.5 text-sm font-black tracking-wide">
                       {estado.actual.prioridadEtiqueta}
@@ -401,45 +455,85 @@ export default function VentanillaPage() {
                       : 'Documento no registrado'}
                   </p>
 
-                  <div className="mt-5 flex items-center gap-4 rounded-2xl bg-white/10 px-5 py-4">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
-                      <Timer className="h-6 w-6" aria-hidden />
-                    </span>
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-white/70">
-                        Tiempo atendiendo
-                      </p>
-                      <p className="font-mono text-4xl font-black leading-none tabular-nums">
-                        {duracion(transcurrido)}
-                      </p>
+                  {atencionIniciada ? (
+                    <div className="mt-5 flex items-center gap-4 rounded-2xl bg-white/10 px-5 py-4">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+                        <Timer className="h-6 w-6" aria-hidden />
+                      </span>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-white/70">
+                          Tiempo atendiendo
+                        </p>
+                        <p className="font-mono text-4xl font-black leading-none tabular-nums">
+                          {duracion(transcurrido)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="mt-5 flex items-start gap-4 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-5 py-4">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-300">
+                        <Megaphone className="h-6 w-6" aria-hidden />
+                      </span>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-200/80">
+                          Turno llamado
+                        </p>
+                        <p className="mt-1 text-sm font-semibold leading-snug text-white/80">
+                          Presione «Iniciar atención» cuando la persona llegue a la
+                          ventanilla.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-white/80">
                     <span>Llamado a las {hora(estado.actual.fechaLlamado)}</span>
+                    {estado.actual.fechaInicioAtencion && (
+                      <span>
+                        Inició atención a las {hora(estado.actual.fechaInicioAtencion)}
+                      </span>
+                    )}
                     <span>{estado.actual.llamados} llamado(s)</span>
                     <span>Creado a las {hora(estado.actual.fechaCreacion)}</span>
                   </div>
 
-                  <div className="mt-7 grid gap-3 sm:grid-cols-3">
-                    <button
-                      type="button"
-                      onClick={() => accion('atender')}
-                      disabled={accionando}
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3.5 text-sm font-black text-white transition hover:bg-emerald-600 active:scale-[0.99] disabled:opacity-70"
-                    >
-                      <CheckCircle2 className="h-5 w-5" aria-hidden />
-                      Finalizar atención
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => accion('rellamar')}
-                      disabled={accionando}
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 py-3.5 text-sm font-black text-white transition hover:bg-amber-600 active:scale-[0.99] disabled:opacity-70"
-                    >
-                      <Megaphone className="h-5 w-5" aria-hidden />
-                      Rellamar
-                    </button>
+                  <div
+                    className={`mt-7 grid gap-3 ${
+                      atencionIniciada ? 'sm:grid-cols-2' : 'sm:grid-cols-3'
+                    }`}
+                  >
+                    {atencionIniciada ? (
+                      <button
+                        type="button"
+                        onClick={() => accion('atender')}
+                        disabled={accionando}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3.5 text-sm font-black text-white transition hover:bg-emerald-600 active:scale-[0.99] disabled:opacity-70"
+                      >
+                        <CheckCircle2 className="h-5 w-5" aria-hidden />
+                        Finalizar atención
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => accion('iniciar')}
+                        disabled={accionando}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3.5 text-sm font-black text-white transition hover:bg-emerald-600 active:scale-[0.99] disabled:opacity-70"
+                      >
+                        <PlayCircle className="h-5 w-5" aria-hidden />
+                        Iniciar atención
+                      </button>
+                    )}
+                    {!atencionIniciada && (
+                      <button
+                        type="button"
+                        onClick={() => accion('rellamar')}
+                        disabled={accionando}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 py-3.5 text-sm font-black text-white transition hover:bg-amber-600 active:scale-[0.99] disabled:opacity-70"
+                      >
+                        <Megaphone className="h-5 w-5" aria-hidden />
+                        Rellamar
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setConfirmarAusente(true)}
@@ -456,7 +550,7 @@ export default function VentanillaPage() {
                   <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-brand-light text-brand">
                     <Monitor className="h-10 w-10" aria-hidden />
                   </span>
-                  <h2 className="mt-5 text-3xl font-black text-ink">Sin turno en atención</h2>
+                  <h2 className="mt-5 text-3xl font-black text-ink">Sin turno activo</h2>
                   <p className="mx-auto mt-2 max-w-md text-sm text-muted">
                     Elija una persona de la cola para llamarla, o presione “Llamar siguiente”.
                     Los prioritarios pasan primero.
@@ -479,69 +573,46 @@ export default function VentanillaPage() {
               )}
             </section>
 
-            <div className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <StatCard
-                  icon={<Clock3 className="h-5 w-5" />}
-                  label="En espera"
-                  value={estado?.enEspera ?? 0}
-                  tone="amber"
-                />
-                <StatCard
-                  icon={<CheckCircle2 className="h-5 w-5" />}
-                  label="Atendidos hoy"
-                  value={estado?.atendidosHoy ?? 0}
-                  tone="emerald"
-                />
-                <StatCard
-                  icon={<Megaphone className="h-5 w-5" />}
-                  label="Llamados hoy"
-                  value={estado?.llamadosHoy ?? 0}
-                  tone="blue"
-                />
-                <StatCard
-                  icon={<UserX className="h-5 w-5" />}
-                  label="Ausentes hoy"
-                  value={estado?.ausentesHoy ?? 0}
-                  tone="red"
-                />
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <StatCard
+                icon={<Clock3 className="h-5 w-5" />}
+                label="En espera"
+                value={estado?.enEspera ?? 0}
+                tone="amber"
+              />
+              <StatCard
+                icon={<CheckCircle2 className="h-5 w-5" />}
+                label="Atendidos hoy"
+                value={estado?.atendidosHoy ?? 0}
+                tone="emerald"
+              />
+              <StatCard
+                icon={<Megaphone className="h-5 w-5" />}
+                label="Llamados hoy"
+                value={estado?.llamadosHoy ?? 0}
+                tone="blue"
+              />
+              <StatCard
+                icon={<UserX className="h-5 w-5" />}
+                label="Ausentes hoy"
+                value={estado?.ausentesHoy ?? 0}
+                tone="red"
+              />
+            </div>
+          </div>
 
-              <section className="rounded-3xl bg-white p-6 shadow-kiosk">
-                <h2 className="flex items-center gap-2 text-lg font-black text-ink">
-                  <Users className="h-5 w-5 text-brand" aria-hidden />
-                  Cola por tipo
-                </h2>
-                <div className="mt-4 grid grid-cols-3 gap-3">
-                  {[
-                    { codigo: 'PR', nombre: 'Prioritarios', valor: estado?.prioritariosEnEspera ?? 0, prioridad: 1 },
-                    { codigo: 'GN', nombre: 'Generales', valor: estado?.generalesEnEspera ?? 0, prioridad: 2 },
-                    { codigo: 'JR', nombre: 'Jurídicos', valor: estado?.juridicosEnEspera ?? 0, prioridad: 3 },
-                  ].map((item) => (
-                    <div
-                      key={item.codigo}
-                      className="rounded-2xl border border-slate-100 bg-canvas p-3 text-center"
-                    >
-                      <span
-                        className={`mx-auto flex h-10 w-10 items-center justify-center rounded-2xl text-xs font-black ${
-                          COLORES_TIPO[item.prioridad]
-                        }`}
-                      >
-                        {item.codigo}
-                      </span>
-                      <p className="mt-2 text-2xl font-black text-ink">{item.valor}</p>
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
-                        {item.nombre}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="rounded-3xl bg-white p-6 shadow-kiosk">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-black text-ink">Siguientes en la cola</h2>
-                  <span className="text-xs font-bold text-muted">
+          <section className="mt-6 rounded-3xl bg-white p-6 shadow-kiosk">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="flex items-center gap-2 text-lg font-black text-ink">
+                      <Users className="h-5 w-5 text-brand" aria-hidden />
+                      Cola de llamados
+                    </h2>
+                    <p className="mt-1 text-sm text-muted">
+                      Turnos en espera por tipo, en orden de llegada.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-canvas px-3 py-1 text-xs font-black text-muted">
                     {estado?.enEspera ?? 0} en espera
                   </span>
                 </div>
@@ -558,62 +629,91 @@ export default function VentanillaPage() {
                   />
                 </label>
 
-                <div className="mt-4 max-h-[420px] space-y-2 overflow-y-auto pr-1">
-                  {siguientesFiltrados.map((item, indice) => (
+                <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                  {colasPorTipo.map((grupo) => (
                     <div
-                      key={item.id}
-                      className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 px-4 py-3"
+                      key={grupo.codigo}
+                      className="overflow-hidden rounded-2xl border border-slate-100"
                     >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-canvas text-xs font-black text-muted">
-                          {indice + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="font-mono text-base font-black text-ink">{item.codigo}</p>
-                          <p className="truncate text-xs font-semibold text-muted">
-                            {item.nombrePersona ?? 'Sin identificación'}
-                            {item.tipoDocumento && item.cedula
-                              ? ` · ${item.tipoDocumento} ${item.cedula}`
-                              : ''}
-                          </p>
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
-                            {item.prioridadEtiqueta} · Espera {espera(item.esperaMin)}
-                          </p>
+                      <div className="flex flex-wrap items-center justify-between gap-2 bg-canvas px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`flex h-10 w-10 items-center justify-center rounded-2xl text-xs font-black ${
+                              COLORES_TIPO[grupo.prioridad]
+                            }`}
+                          >
+                            {grupo.codigo}
+                          </span>
+                          <div>
+                            <p className="font-black text-ink">{grupo.nombre}</p>
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
+                              {grupo.detalle}
+                            </p>
+                          </div>
                         </div>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-ink shadow-sm">
+                          {grupo.total} en espera
+                        </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => accion('llamar', item.id)}
-                        disabled={accionando || Boolean(estado?.actual)}
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-xs font-black text-white transition hover:bg-brand-dark disabled:opacity-50"
-                      >
-                        <Megaphone className="h-4 w-4" aria-hidden />
-                        Llamar
-                      </button>
+
+                      <div className="max-h-[300px] space-y-2 overflow-y-auto p-3">
+                        {grupo.items.map((item, indice) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 px-3 py-2.5"
+                          >
+                            <div className="flex min-w-0 items-center gap-3">
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-canvas text-xs font-black text-muted">
+                                {indice + 1}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="font-mono text-base font-black text-ink">
+                                  {item.codigo}
+                                </p>
+                                <p className="truncate text-xs font-semibold text-muted">
+                                  {item.nombrePersona ?? 'Sin identificación'}
+                                  {item.tipoDocumento && item.cedula
+                                    ? ` · ${item.tipoDocumento} ${item.cedula}`
+                                    : ''}
+                                </p>
+                                <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
+                                  Espera {espera(item.esperaMin)}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => accion('llamar', item.id)}
+                              disabled={accionando || Boolean(estado?.actual)}
+                              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-xs font-black text-white transition hover:bg-brand-dark disabled:opacity-50"
+                            >
+                              <Megaphone className="h-4 w-4" aria-hidden />
+                              Llamar
+                            </button>
+                          </div>
+                        ))}
+
+                        {grupo.items.length === 0 && (
+                          <p className="px-2 py-3 text-center text-sm text-muted">
+                            {grupo.total > 0 && filtro.trim()
+                              ? `Sin resultados para “${filtro}”.`
+                              : 'No hay turnos en espera.'}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
-
-                  {(!estado || estado.siguientes.length === 0) && (
-                    <p className="py-4 text-center text-sm text-muted">
-                      No hay turnos en espera.
-                    </p>
-                  )}
-                  {estado &&
-                    estado.siguientes.length > 0 &&
-                    siguientesFiltrados.length === 0 && (
-                      <p className="py-4 text-center text-sm text-muted">
-                        Sin resultados para “{filtro}”.
-                      </p>
-                    )}
                 </div>
               </section>
-            </div>
-          </div>
 
           <section className="mt-6 rounded-3xl bg-white p-6 shadow-kiosk">
             <h2 className="text-xl font-black text-ink">Historial de esta ventanilla</h2>
+            <p className="mt-1 text-sm text-muted">
+              Si una persona marcada como ausente regresa, rellámela desde aquí cuando la
+              ventanilla esté libre.
+            </p>
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <table className="w-full min-w-[820px] text-left text-sm">
                 <thead>
                   <tr className="text-xs font-black uppercase tracking-wide text-muted">
                     <th className="pb-3">Turno</th>
@@ -623,6 +723,7 @@ export default function VentanillaPage() {
                     <th className="pb-3">Creado</th>
                     <th className="pb-3">Llamado</th>
                     <th className="pb-3">Fin</th>
+                    <th className="pb-3 text-right">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -641,11 +742,29 @@ export default function VentanillaPage() {
                       <td className="py-3 text-muted">{hora(turno.fechaCreacion)}</td>
                       <td className="py-3 text-muted">{hora(turno.fechaLlamado)}</td>
                       <td className="py-3 text-muted">{hora(turno.fechaSalida)}</td>
+                      <td className="py-3 text-right">
+                        {turno.estado === 'AUSENTE' && (
+                          <button
+                            type="button"
+                            onClick={() => accion('rellamar', turno.id)}
+                            disabled={accionando || Boolean(estado?.actual)}
+                            title={
+                              estado?.actual
+                                ? 'Finalice el turno actual antes de rellamar a una persona ausente'
+                                : 'Volver a llamar a esta persona'
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <Megaphone className="h-3.5 w-3.5" aria-hidden />
+                            Rellamar
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                   {(!estado || estado.recientes.length === 0) && (
                     <tr>
-                      <td colSpan={7} className="py-6 text-center text-muted">
+                      <td colSpan={8} className="py-6 text-center text-muted">
                         Todavía no hay turnos atendidos en esta ventanilla.
                       </td>
                     </tr>
@@ -663,7 +782,7 @@ export default function VentanillaPage() {
         title="¿Marcar el turno como ausente?"
         message={
           estado?.actual
-            ? `El turno ${estado.actual.codigo} pasará a ausente y no se podrá atender después.`
+            ? `El turno ${estado.actual.codigo} pasará a ausente. Si la persona regresa, podrá rellamarlo desde el historial de esta ventanilla.`
             : undefined
         }
         actionLabel="Sí, marcar ausente"

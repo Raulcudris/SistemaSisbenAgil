@@ -96,7 +96,7 @@ export default function ReportesPage() {
       return;
     }
     const filas: string[][] = [];
-    filas.push(['Reporte SISBEN']);
+    filas.push(['Reporte SISBÉN']);
     filas.push(['Desde', reporte.fechaInicio]);
     filas.push(['Hasta', reporte.fechaFin]);
     filas.push([]);
@@ -104,7 +104,7 @@ export default function ReportesPage() {
     filas.push([
       'Turnos generados',
       'En espera',
-      'En atención',
+      'Llamados sin finalizar',
       'Atendidos',
       'Ausentes',
       'Cancelados',
@@ -147,7 +147,7 @@ export default function ReportesPage() {
       'Activo',
       'Generados',
       'En espera',
-      'En atención',
+      'Llamados sin finalizar',
       'Atendidos',
       'Ausentes',
       'Cancelados',
@@ -302,9 +302,9 @@ export default function ReportesPage() {
             />
             <StatCard
               icon={<Users className="h-5 w-5" aria-hidden />}
-              label="En atención"
+              label="Llamados"
               value={reporte.totales.llamados}
-              detail="Llamados sin finalizar"
+              detail="Sin finalizar"
               tone="blue"
             />
             <StatCard
@@ -425,7 +425,7 @@ export default function ReportesPage() {
                       <th className="pb-3">Estado</th>
                       <th className="pb-3 text-right">Generados</th>
                       <th className="pb-3 text-right">En espera</th>
-                      <th className="pb-3 text-right">En atención</th>
+                      <th className="pb-3 text-right">Llamados</th>
                       <th className="pb-3 text-right">Atendidos</th>
                       <th className="pb-3 text-right">Ausentes</th>
                       <th className="pb-3 text-right">Cancelados</th>

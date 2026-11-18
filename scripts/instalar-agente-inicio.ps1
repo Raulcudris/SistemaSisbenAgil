@@ -1,8 +1,8 @@
-# Crea un acceso directo en la carpeta de Inicio de Windows para que el
+﻿# Crea un acceso directo en la carpeta de Inicio de Windows para que el
 # agente de impresión se ejecute automáticamente al iniciar sesión.
 $inicio = [Environment]::GetFolderPath('Startup')
 $origen = Join-Path $PSScriptRoot 'iniciar-agente-impresion.bat'
-$destino = Join-Path $inicio 'SisbenAgil Agente de Impresion.lnk'
+$destino = Join-Path $inicio 'SisbénÁgil Agente de Impresion.lnk'
 
 if (-not (Test-Path $origen)) {
     Write-Error "No se encontró $origen"
@@ -14,7 +14,7 @@ $acceso = $shell.CreateShortcut($destino)
 $acceso.TargetPath = $origen
 $acceso.WorkingDirectory = (Join-Path $PSScriptRoot '..')
 $acceso.WindowStyle = 7
-$acceso.Description = 'Agente local de impresion SisbenAgil'
+$acceso.Description = 'Agente local de impresion SisbénÁgil'
 $acceso.Save()
 
 Write-Host "Acceso directo creado en: $destino"

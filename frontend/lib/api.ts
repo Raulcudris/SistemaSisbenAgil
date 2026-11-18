@@ -2,6 +2,7 @@ import type {
   ApiErrorBody,
   AtencionesPage,
   DashboardResumen,
+  KioscoCola,
   KioskConfig,
   LoginResponse,
   MotivoPrioridad,
@@ -20,7 +21,16 @@ import type {
   VentanillaResumen,
 } from './types';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8088/api';
+// Por defecto se usa una ruta relativa para que el navegador llame al mismo
+// origen (Next.js la reenvía al backend con un rewrite). Así el kiosco funciona
+// igual desde localhost o desde la IP del servidor.
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+
+// Permite que un frontend nuevo siga funcionando contra un backend anterior
+// que todavía no devuelve la lista de ventanillas libres.
+function normalizarColaKiosco(cola: KioscoCola): KioscoCola {
+  return { ...cola, ventanillasLibres: cola.ventanillasLibres ?? [] };
+}
 
 export class ApiError extends Error {
   readonly codigo: string;
@@ -206,6 +216,20 @@ export const api = {
 
   tv: () => request<TvResumen>('/tv'),
 
+  /* ---- Apoyo al operador del kiosco ---- */
+
+  kioscoCola: async (token: string) =>
+    normalizarColaKiosco(await request<KioscoCola>('/kiosco/cola', undefined, token)),
+
+  kioscoAsignar: async (token: string, turnoId: number, ventanillaId: number) =>
+    normalizarColaKiosco(
+      await request<KioscoCola>(
+        `/kiosco/asignar?turnoId=${turnoId}&ventanillaId=${ventanillaId}`,
+        { method: 'POST' },
+        token,
+      ),
+    ),
+
   /* ---- Acceso funcionarios ---- */
 
   login: (username: string, password: string) =>
@@ -280,7 +304,7 @@ export const api = {
   adminActualizarVentanilla: (
     token: string,
     id: number,
-    data: { nombre?: string; activa?: boolean },
+    data: { codigo?: string; nombre?: string; activa?: boolean },
   ) =>
     request<VentanillaAdmin>(
       `/admin/ventanillas/${id}`,
@@ -336,6 +360,13 @@ export const api = {
       token,
     ),
 
+  ventanillaIniciarAtencion: (token: string, ventanillaId: number, turnoId: number) =>
+    request<VentanillaEstado>(
+      `/ventanilla/turnos/${turnoId}/iniciar-atencion?ventanillaId=${ventanillaId}`,
+      { method: 'POST' },
+      token,
+    ),
+
   ventanillaAtender: (token: string, ventanillaId: number, turnoId: number) =>
     request<VentanillaEstado>(
       `/ventanilla/turnos/${turnoId}/atender?ventanillaId=${ventanillaId}`,
@@ -360,7 +391,10 @@ export const api = {
 
 export function mensajeError(error: unknown): string {
   if (error instanceof ApiError) {
-    return error.message;
+    const detalle = error.detalles
+      ? Object.values(error.detalles).find((valor) => Boolean(valor))
+      : undefined;
+    return detalle ?? error.message;
   }
   if (error instanceof Error) {
     return error.message;

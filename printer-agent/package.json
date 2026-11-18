@@ -2,7 +2,7 @@
   "name": "sisbenagil-print-agent",
   "version": "1.0.0",
   "private": true,
-  "description": "Agente local de impresión para SisbenAgil",
+  "description": "Agente local de impresión para SisbénÁgil",
   "main": "agent.js",
   "scripts": {
     "start": "node agent.js",

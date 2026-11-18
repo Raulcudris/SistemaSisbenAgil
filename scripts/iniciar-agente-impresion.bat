@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title Agente de impresion SisbenAgil
+title Agente de impresion SisbénÁgil
 cd /d "%~dp0..\printer-agent"
 
 if not exist "agent.js" (
@@ -21,7 +21,7 @@ if not exist "node_modules" (
 )
 
 echo.
-echo Iniciando agente de impresion SisbenAgil...
+echo Iniciando agente de impresion SisbénÁgil...
 echo Deje esta ventana abierta mientras el kiosco este en uso.
 echo.
 call npm start

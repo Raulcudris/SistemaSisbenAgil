@@ -1,4 +1,4 @@
-# Inicia el kiosco de SisbenAgil en modo kiosco con impresión directa.
+﻿# Inicia el kiosco de SisbénÁgil en modo kiosco con impresión directa.
 # --kiosk-printing evita el diálogo de impresión y envía el ticket a la
 # impresora predeterminada. La impresora debe estar instalada y conectada.
 param(

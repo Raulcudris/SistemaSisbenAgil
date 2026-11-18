@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 200 200">
+  <g>
+  <defs>
+    <clipPath id="dt-icon-cut-right"><path d="M 100 0 L 200 0 L 200 200 L 100 200 L 112 100 Z"/></clipPath>
+    <mask id="dt-icon-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+      <rect width="200" height="200" fill="#fff"/>
+      <g fill="#000">
+        <rect x="64" y="154" width="8" height="4" rx="2"/>
+        <rect x="77" y="154" width="8" height="4" rx="2"/>
+        <rect x="90" y="154" width="8" height="4" rx="2"/>
+      </g>
+    </mask>
+  </defs>
+  <g mask="url(#dt-icon-cut)">
+    <path d="M 62 28 H 100 C 140 28 168 56 168 100 C 168 144 140 172 100 172 H 62 C 47 172 36 161 36 146 V 54 C 36 39 47 28 62 28 Z M 66 58 H 98 C 120 58 138 76 138 100 C 138 124 120 142 98 142 H 66 C 60 142 56 138 56 132 V 68 C 56 62 60 58 66 58 Z" fill="#E11D2E" fill-rule="evenodd"/>
+    <path d="M 62 28 H 100 C 140 28 168 56 168 100 C 168 144 140 172 100 172 H 62 C 47 172 36 161 36 146 V 54 C 36 39 47 28 62 28 Z M 66 58 H 98 C 120 58 138 76 138 100 C 138 124 120 142 98 142 H 66 C 60 142 56 138 56 132 V 68 C 56 62 60 58 66 58 Z" fill="#0F172A" fill-rule="evenodd" clip-path="url(#dt-icon-cut-right)"/>
+    
+        <g fill="#0F172A">
+          <rect x="80" y="82" width="8" height="8" rx="1.5"/>
+          <rect x="94" y="82" width="8" height="8" rx="1.5"/>
+          <rect x="108" y="82" width="8" height="8" rx="1.5"/>
+          <rect x="80" y="96" width="8" height="8" rx="1.5"/>
+          <rect x="108" y="96" width="8" height="8" rx="1.5"/>
+          <rect x="80" y="110" width="8" height="8" rx="1.5"/>
+          <rect x="94" y="110" width="8" height="8" rx="1.5"/>
+          <rect x="108" y="110" width="8" height="8" rx="1.5" fill="#E11D2E"/>
+        </g>
+        
+  </g>
+</g>
+</svg>

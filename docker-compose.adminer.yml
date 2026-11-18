@@ -1,0 +1,36 @@
+# Overlay OPCIONAL para ver la base desde el navegador con Adminer.
+# No publica MySQL: Adminer entra por la red interna de Docker.
+#
+# Uso en el servidor:
+#   docker compose -f docker-compose.server.yml -f docker-compose.adminer.yml --env-file .env up -d digiturno-adminer
+#
+# Acceso: http://IP_DEL_SERVIDOR:8099
+#
+# En la pantalla de Adminer:
+#   Sistema   : MySQL
+#   Servidor  : digiturno-db
+#   Usuario   : dispensamaster
+#   Contraseña: el valor de DB_PASSWORD en .env
+#   Base      : dispensamaster
+#
+# Para quitarlo:
+#   docker compose -f docker-compose.server.yml -f docker-compose.adminer.yml --env-file .env rm -sf digiturno-adminer
+
+services:
+  digiturno-adminer:
+    image: adminer:4
+    container_name: digiturno-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: digiturno-db
+      TZ: America/Bogota
+    depends_on:
+      digiturno-db:
+        condition: service_healthy
+    ports:
+      - "${ADMINER_PORT:-8099}:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,28 @@
+# Copie este archivo como .env antes de desplegar:
+#   Copy-Item .env.example .env
+# y cambie todas las contraseñas y el secreto JWT.
+
+# Puertos en el host (los que NO están ocupados en el servidor).
+FRONTEND_PORT=3001
+BACKEND_PORT=8088
+
+# Base de datos (solo accesible dentro de Docker).
+DB_NAME=dispensamaster
+DB_USER=dispensamaster
+DB_PASSWORD=cambie-esta-clave
+MYSQL_ROOT_PASSWORD=cambie-esta-clave-root
+
+# Secreto para firmar los JWT. Use al menos 32 caracteres aleatorios.
+# Puede generarlo con:  openssl rand -base64 48
+APP_JWT_SECRET=cambie-este-secreto-por-uno-de-al-menos-32-caracteres
+APP_JWT_HOURS=12
+
+# Copias de seguridad (servicio "backup")
+# Hora diaria (24 h) a la que se ejecuta la copia, en zona America/Bogota.
+BACKUP_SCHEDULE_TIME=02:00
+# Días que se conservan las copias antes de borrarlas automáticamente.
+BACKUP_RETENTION_DAYS=14
+
+# Orígenes permitidos si algún cliente llama a la API directamente.
+# Con el proxy de Next.js normalmente no hace falta cambiarlo.
+# APP_CORS_ALLOWED_ORIGIN_PATTERNS=http://localhost:[*],http://192.168.*.*:[*]

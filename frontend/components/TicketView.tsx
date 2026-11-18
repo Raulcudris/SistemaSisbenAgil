@@ -38,7 +38,7 @@ export function TicketView({ ticket }: { ticket: Ticket }) {
       <p className="mt-2 text-[11px] font-semibold text-black">
         {ticket.empresa} · {ticket.sede}
       </p>
-      <p className="mt-0.5 text-[11px] font-bold text-black">Turnos SISBEN</p>
+      <p className="mt-0.5 text-[11px] font-bold text-black">Turnos SISBÉN</p>
     </div>
   );
 }

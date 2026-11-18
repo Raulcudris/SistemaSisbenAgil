@@ -16,8 +16,12 @@ const montserrat = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'SisbenAgil · Turnos',
-  description: 'Kiosco de autoservicio para la asignación de turnos de SISBEN',
+  title: 'SisbénÁgil · Turnos',
+  description: 'Kiosco de autoservicio para la asignación de turnos de SISBÉN',
+  icons: {
+    icon: [{ url: '/logos/digiturnos-favicon-64.png', type: 'image/png', sizes: '64x64' }],
+    apple: [{ url: '/logos/digiturnos-app-icon.png', sizes: '512x512' }],
+  },
 };
 
 export const viewport: Viewport = {

@@ -136,15 +136,24 @@ function normalizarTicket(body) {
   const personas = Number(body.personasDelante);
   return {
     codigo,
-    servicio: texto(body.servicio, 150) || 'SISBEN',
+    servicio: texto(body.servicio, 150) || 'SISBÉN',
     prioridadEtiqueta: texto(body.prioridadEtiqueta, 50) || 'General',
     nivel: texto(body.nivel, 120) || null,
     personasDelante: Number.isFinite(personas)
       ? Math.max(0, Math.trunc(personas))
       : 0,
-    fechaTexto: texto(body.fechaTexto, 100) || new Date().toLocaleString('es-CO'),
+    fechaTexto:
+      texto(body.fechaTexto, 100) ||
+      new Date().toLocaleString('es-CO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }),
     mensaje: texto(body.mensaje, 300),
-    empresa: texto(body.empresa, 100) || 'SisbenAgil',
+    empresa: texto(body.empresa, 100) || 'SisbénÁgil',
     sede: texto(body.sede, 100),
   };
 }
@@ -240,7 +249,7 @@ server.on('error', (error) => {
 });
 
 server.listen(PORT, HOST, () => {
-  log(`Agente de impresión SisbenAgil v${VERSION} en http://${HOST}:${PORT}`);
+  log(`Agente de impresión SisbénÁgil v${VERSION} en http://${HOST}:${PORT}`);
   log(`Node ${process.version} · ${process.platform}`);
   getDefaultPrinter()
     .then((impresora) => {

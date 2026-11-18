@@ -108,8 +108,10 @@ export default function TicketPage() {
   return (
     <KioskShell
       center={false}
+      badge="Paso 3 de 3"
       title="Su turno está listo"
       subtitle="Guarde el ticket y espere su llamado"
+      footer="SisbénÁgil · Kiosco de autoservicio"
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col-reverse items-center justify-center gap-10 lg:flex-row lg:items-start">
         <div className="no-print flex w-full max-w-md flex-col items-center gap-6 lg:items-start">
