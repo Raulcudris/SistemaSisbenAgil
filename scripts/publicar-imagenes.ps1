@@ -2,7 +2,7 @@
 #
 # Uso:
 #   scripts\publicar-imagenes.ps1                 # usa las versiones de .env
-#   scripts\publicar-imagenes.ps1 -Version 2.0.1  # cambia backend y frontend
+#   scripts\publicar-imagenes.ps1 -Version 2.0.3  # cambia backend y frontend
 #   scripts\publicar-imagenes.ps1 -SinPush        # solo construye y etiqueta
 #
 # Antes de publicar:
