@@ -27,6 +27,19 @@ function normalizarNombreServicio(nombre: string): string {
     .toUpperCase();
 }
 
+/**
+ * En el kiosco el nombre solo puede contener letras, espacios, apóstrofes y
+ * guiones. Se eliminan números y símbolos, incluso al pegar texto.
+ */
+function limpiarNombreKiosco(valor: string): string {
+  return valor
+    .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s'’-]/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^\s+/, '')
+    .slice(0, 80)
+    .toUpperCase();
+}
+
 export default function CedulaPage() {
   const go = useDeferredPush();
   const autenticado = useKioskAuth();
@@ -76,9 +89,9 @@ export default function CedulaPage() {
       setPersonaEncontrada(persona);
       setConsultaRealizada(true);
       if (persona) {
-        setNombre(persona.nombreCompleto.toUpperCase());
+        setNombre(limpiarNombreKiosco(persona.nombreCompleto));
       } else {
-        setNombre((actual) => actual.toUpperCase());
+        setNombre((actual) => limpiarNombreKiosco(actual));
         window.setTimeout(() => nombreRef.current?.focus(), 0);
       }
     } catch (e) {
@@ -100,7 +113,7 @@ export default function CedulaPage() {
       return;
     }
 
-    const nombreLimpio = nombre.replace(/\s+/g, ' ').trim().toUpperCase();
+    const nombreLimpio = limpiarNombreKiosco(nombre).trim();
     setBuscando(true);
     setError(null);
 
@@ -116,7 +129,7 @@ export default function CedulaPage() {
       const nombreFinal =
         nombreLimpio.length >= 2
           ? nombreLimpio
-          : persona?.nombreCompleto?.toUpperCase() ?? '';
+          : limpiarNombreKiosco(persona?.nombreCompleto ?? '').trim();
 
       if (nombreFinal.length < 2) {
         setError('Escriba el nombre y apellido del usuario.');
@@ -290,7 +303,7 @@ export default function CedulaPage() {
                   ref={nombreRef}
                   value={nombre}
                   onChange={(event) => {
-                    setNombre(event.target.value.toUpperCase().slice(0, 80));
+                    setNombre(limpiarNombreKiosco(event.target.value));
                     setError(null);
                   }}
                   autoComplete="off"
@@ -306,6 +319,7 @@ export default function CedulaPage() {
               </div>
               <p className="mt-1.5 text-sm text-muted">
                 Si está registrado, se completa automáticamente. Puede corregirlo.
+                Solo se permiten letras, espacios, apóstrofos y guiones.
               </p>
             </div>
 
@@ -315,7 +329,7 @@ export default function CedulaPage() {
                   Nombre y apellido del usuario
                 </p>
                 <p className="mt-1 text-2xl font-black text-emerald-900">
-                  {(nombre || personaEncontrada.nombreCompleto).toUpperCase()}
+                  {nombre || limpiarNombreKiosco(personaEncontrada.nombreCompleto)}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-emerald-700">
                   Documento {personaEncontrada.tipoDocumento ?? tipoDocumento}{' '}

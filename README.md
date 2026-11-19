@@ -134,8 +134,9 @@ En `/cedula` el usuario selecciona el tipo de documento (`CC`, `TI`, `RC`, `CE`,
 `PA` o `PEP`), digita el número y presiona **Enter**. Si el documento ya existe,
 el sistema completa el campo y muestra en pantalla el **nombre y apellido**
 registrados; si es nuevo, habilita el nombre para escribir y crear la persona.
-El nombre siempre se guarda y se muestra en **mayúsculas**, y puede corregirse
-en el campo antes de continuar. Después se carga automáticamente el único
+El nombre siempre se guarda y se muestra en **mayúsculas**, solo admite letras,
+espacios, apóstrofos y guiones (no números), y puede corregirse en el campo antes
+de continuar. Después se carga automáticamente el único
 servicio (SISBÉN) y se pasa a la selección del tipo de turno.
 
 En `/prioridades` el usuario elige:
@@ -265,11 +266,9 @@ para abrir correctamente en Excel.
 
 `/tv` es pública (no requiere JWT) y está pensada para un televisor o monitor en
 la sala. Muestra el último llamado en grande con el **nombre y apellido** de la
-persona, los llamados anteriores y el número de personas en espera; se actualiza
-cada 3 segundos. No muestra documentos ni teléfonos.
-
-La cabecera incluye una franja institucional con los logos de la **Alcaldía de
-Valledupar**, **SISBÉN** y **RUI**, ubicados en `frontend/public/logos/`.
+persona, los llamados anteriores en un panel más amplio y el número de personas
+en espera. La tipografía es grande para que se lea desde lejos y la pantalla se
+actualiza cada segundo. No muestra documentos ni teléfonos.
 
 La primera vez hay que pulsar **“Toque la pantalla para habilitar el sonido”**
 (los navegadores exigen una interacción para reproducir audio). Después, el sonido
@@ -281,11 +280,24 @@ Para que suene **desde el arranque sin pulsar nada**, use el lanzador
 `--autoplay-policy=no-user-gesture-required`, apuntando a `/tv`.
 
 Cada nuevo llamado suena una campana de dos tonos y se anuncia **dos veces** por voz
-en español con el **nombre completo** de la persona: “Turno prioritario 001, Juan
-Pérez. Pase a Ventanilla 1. Repito, turno prioritario 001, Juan Pérez. Pase a
-Ventanilla 1.” El botón **Repetir** vuelve a anunciar el último turno, el
-de pantalla completa lo deja fijo en el TV y **Silenciar** lo apaga (la preferencia
-se guarda). Use Chrome o Edge para la síntesis de voz.
+en español con el **nombre completo** de la persona. Por ejemplo, para `GN-010` y
+ventanilla 22: “Turno G N diez. Miguel David Suarez. Diríjase a ventanilla
+número veintidós. Repito. Turno G N diez. Miguel David Suarez. Diríjase a
+ventanilla número veintidós.” El prefijo se lee con sus letras (`GN` → G N,
+`PR` → P R, `JR` → J R) y los números se leen en palabras (10 = diez,
+22 = veintidós, 33 = treinta y tres), no dígito por dígito, y los nombres se
+normalizan para que la voz los pronuncie de corrido. Entre un llamado y el siguiente
+hay una pausa de **5 segundos** para que las voces no se encimen. El botón
+**Repetir** vuelve a anunciar el último turno, el botón de pantalla completa lo deja
+fijo en el TV y **Silenciar** lo apaga (la preferencia se guarda). Use Chrome o Edge
+para la síntesis de voz; la pantalla usa la **primera voz española disponible** en
+el navegador, la misma que se utilizaba antes de los ajustes de pronunciación.
+
+Si hay **varios televisores** abriendo `/tv`, todos calculan la hora del anuncio
+con la hora del servidor. Así el mismo llamado suena al mismo tiempo en todos y no
+se escucha primero en uno y después repetido en el otro. Para que la sincronización
+funcione, los televisores deben estar encendidos y con la página abierta antes de
+que se realice el llamado.
 
 ### Orden de la cola
 
