@@ -37,8 +37,8 @@ Contenido relevante:
 
 ```ini
 DOCKERHUB_USERNAME=raulcudris
-BACKEND_VERSION=2.0.0
-FRONTEND_VERSION=2.0.0
+BACKEND_VERSION=2.0.3
+FRONTEND_VERSION=2.0.3
 FRONTEND_PORT=3001
 BACKEND_PORT=8088
 ```
@@ -46,8 +46,8 @@ BACKEND_PORT=8088
 Las imágenes que se publican serán:
 
 ```
-raulcudris/digiturno-backend:2.0.0
-raulcudris/digiturno-frontend:2.0.0
+raulcudris/digiturno-backend:2.0.3
+raulcudris/digiturno-frontend:2.0.3
 ```
 
 ---
@@ -70,20 +70,20 @@ mvn clean package -DskipTests
 Resultado:
 
 ```
-backend\target\dispensamaster-backend-2.0.0.jar
+backend\target\dispensamaster-backend-2.0.3.jar
 ```
 
 Comprobación rápida del jar:
 
 ```powershell
-Get-Item target\dispensamaster-backend-2.0.0.jar | Select-Object Name, Length
+Get-Item target\dispensamaster-backend-2.0.3.jar | Select-Object Name, Length
 ```
 
 > El backend necesita MySQL para arrancar. Para probarlo solo, usa la base de
 > desarrollo (`docker compose -f docker-compose.yml up -d`) y luego:
 >
 > ```powershell
-> java -jar target\dispensamaster-backend-2.0.0.jar
+> java -jar target\dispensamaster-backend-2.0.3.jar
 > ```
 >
 > La configuración de desarrollo usa `localhost:3307` y la base
@@ -144,7 +144,7 @@ npm run typecheck
 ```powershell
 cd C:\React\DispensaMasterV2
 
-docker build -t raulcudris/digiturno-backend:2.0.0 .\backend
+docker build -t raulcudris/digiturno-backend:2.0.3 .\backend
 ```
 
 La imagen compila el jar dentro de Maven y solo copia el JRE + jar al resultado
@@ -155,14 +155,14 @@ final (Alpine). No necesitas tener Maven instalado para este paso.
 ```powershell
 docker build `
   --build-arg API_INTERNAL_URL=http://digiturno-backend:8088 `
-  -t raulcudris/digiturno-frontend:2.0.0 `
+  -t raulcudris/digiturno-frontend:2.0.3 `
   .\frontend
 ```
 
 En una sola línea:
 
 ```powershell
-docker build --build-arg API_INTERNAL_URL=http://digiturno-backend:8088 -t raulcudris/digiturno-frontend:2.0.0 .\frontend
+docker build --build-arg API_INTERNAL_URL=http://digiturno-backend:8088 -t raulcudris/digiturno-frontend:2.0.3 .\frontend
 ```
 
 > El nombre `digiturno-backend` es el servicio del `docker-compose` de
@@ -177,8 +177,8 @@ docker images | Select-String "digiturno"
 Deberías ver:
 
 ```
-raulcudris/digiturno-backend     2.0.0    ...    ~516MB
-raulcudris/digiturno-frontend    2.0.0    ...    ~285MB
+raulcudris/digiturno-backend     2.0.3    ...    ~516MB
+raulcudris/digiturno-frontend    2.0.3    ...    ~285MB
 ```
 
 > **Arquitectura**: si compilas en un Mac con Apple Silicon, añade
@@ -247,17 +247,17 @@ contraseña, no la contraseña de la cuenta.
 ### 7.2 Etiquetar también como `latest`
 
 ```powershell
-docker tag raulcudris/digiturno-backend:2.0.0  raulcudris/digiturno-backend:latest
-docker tag raulcudris/digiturno-frontend:2.0.0 raulcudris/digiturno-frontend:latest
+docker tag raulcudris/digiturno-backend:2.0.3  raulcudris/digiturno-backend:latest
+docker tag raulcudris/digiturno-frontend:2.0.3 raulcudris/digiturno-frontend:latest
 ```
 
 ### 7.3 Subir las cuatro etiquetas
 
 ```powershell
-docker push raulcudris/digiturno-backend:2.0.0
+docker push raulcudris/digiturno-backend:2.0.3
 docker push raulcudris/digiturno-backend:latest
 
-docker push raulcudris/digiturno-frontend:2.0.0
+docker push raulcudris/digiturno-frontend:2.0.3
 docker push raulcudris/digiturno-frontend:latest
 ```
 
@@ -266,8 +266,8 @@ En el primer `push`, Docker Hub crea los repositorios automáticamente.
 ### 7.4 Verificar la publicación
 
 ```powershell
-docker buildx imagetools inspect raulcudris/digiturno-backend:2.0.0
-docker buildx imagetools inspect raulcudris/digiturno-frontend:2.0.0
+docker buildx imagetools inspect raulcudris/digiturno-backend:2.0.3
+docker buildx imagetools inspect raulcudris/digiturno-frontend:2.0.3
 ```
 
 O abre en el navegador:
@@ -302,7 +302,7 @@ scripts\publicar-imagenes.ps1
 Para una versión nueva:
 
 ```powershell
-scripts\publicar-imagenes.ps1 -Version 2.0.1
+scripts\publicar-imagenes.ps1 -Version 2.0.3
 ```
 
 Solo construir y etiquetar, sin subir:
@@ -322,20 +322,20 @@ Cuando publiques una versión nueva, actualiza en este orden:
 1. `.env`:
 
    ```ini
-   BACKEND_VERSION=2.0.1
-   FRONTEND_VERSION=2.0.1
+   BACKEND_VERSION=2.0.3
+   FRONTEND_VERSION=2.0.3
    ```
 
 2. `backend\pom.xml`:
 
    ```xml
-   <version>2.0.1</version>
+   <version>2.0.3</version>
    ```
 
 3. `frontend\package.json` (opcional, solo para trazabilidad):
 
    ```json
-   "version": "2.0.1"
+   "version": "2.0.3"
    ```
 
 4. Reconstruye y publica:
@@ -403,16 +403,16 @@ npm run build
 
 # 3. Imágenes Docker
 cd ..
-docker build -t raulcudris/digiturno-backend:2.0.0 .\backend
-docker build --build-arg API_INTERNAL_URL=http://digiturno-backend:8088 -t raulcudris/digiturno-frontend:2.0.0 .\frontend
+docker build -t raulcudris/digiturno-backend:2.0.3 .\backend
+docker build --build-arg API_INTERNAL_URL=http://digiturno-backend:8088 -t raulcudris/digiturno-frontend:2.0.3 .\frontend
 
 # 4. Publicar
 docker login
-docker tag raulcudris/digiturno-backend:2.0.0  raulcudris/digiturno-backend:latest
-docker tag raulcudris/digiturno-frontend:2.0.0 raulcudris/digiturno-frontend:latest
-docker push raulcudris/digiturno-backend:2.0.0
+docker tag raulcudris/digiturno-backend:2.0.3  raulcudris/digiturno-backend:latest
+docker tag raulcudris/digiturno-frontend:2.0.3 raulcudris/digiturno-frontend:latest
+docker push raulcudris/digiturno-backend:2.0.3
 docker push raulcudris/digiturno-backend:latest
-docker push raulcudris/digiturno-frontend:2.0.0
+docker push raulcudris/digiturno-frontend:2.0.3
 docker push raulcudris/digiturno-frontend:latest
 
 # 5. Servidor

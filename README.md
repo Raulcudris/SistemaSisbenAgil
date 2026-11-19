@@ -846,8 +846,8 @@ Node.js ni el código fuente**.
 
   ```ini
   DOCKERHUB_USERNAME=raulcudris
-  BACKEND_VERSION=2.0.2
-  FRONTEND_VERSION=2.0.2
+  BACKEND_VERSION=2.0.3
+  FRONTEND_VERSION=2.0.3
   ```
 
 Los repositorios `digiturno-backend` y `digiturno-frontend` se crean solos en el
@@ -871,16 +871,16 @@ El script:
 3. Publica en Docker Hub:
 
    ```
-   raulcudris/digiturno-backend:2.0.2
+   raulcudris/digiturno-backend:2.0.3
    raulcudris/digiturno-backend:latest
-   raulcudris/digiturno-frontend:2.0.2
+   raulcudris/digiturno-frontend:2.0.3
    raulcudris/digiturno-frontend:latest
    ```
 
 Para una versión nueva:
 
 ```powershell
-scripts\publicar-imagenes.ps1 -Version 2.0.2
+scripts\publicar-imagenes.ps1 -Version 2.0.3
 ```
 
 y actualice `BACKEND_VERSION` y `FRONTEND_VERSION` en el `.env` del servidor.
@@ -891,12 +891,12 @@ Equivalente manual:
 ```powershell
 docker compose -f docker-compose.prod.yml --env-file .env build
 
-docker tag raulcudris/digiturno-backend:2.0.2  raulcudris/digiturno-backend:latest
-docker push raulcudris/digiturno-backend:2.0.2
+docker tag raulcudris/digiturno-backend:2.0.3  raulcudris/digiturno-backend:latest
+docker push raulcudris/digiturno-backend:2.0.3
 docker push raulcudris/digiturno-backend:latest
 
-docker tag raulcudris/digiturno-frontend:2.0.2 raulcudris/digiturno-frontend:latest
-docker push raulcudris/digiturno-frontend:2.0.2
+docker tag raulcudris/digiturno-frontend:2.0.3 raulcudris/digiturno-frontend:latest
+docker push raulcudris/digiturno-frontend:2.0.3
 docker push raulcudris/digiturno-frontend:latest
 ```
 
@@ -979,7 +979,7 @@ Accesos:
 1. En desarrollo: cambie el código, suba la versión y publique.
 
    ```powershell
-   scripts\publicar-imagenes.ps1 -Version 2.0.2
+   scripts\publicar-imagenes.ps1 -Version 2.0.3
    ```
 
 2. En el servidor: actualice `BACKEND_VERSION` y `FRONTEND_VERSION` en `.env` y:
@@ -992,6 +992,29 @@ Accesos:
 
 Flyway aplica las migraciones nuevas al arrancar el backend. Las copias de
 seguridad siguen funcionando sin cambios.
+
+#### Actualizar solo backend y frontend sin tocar la base de datos
+
+Si ya hay datos y solo cambió el backend o el frontend, actualice únicamente
+esos dos servicios. No use `down` ni `down -v`: el volumen
+`digiturno_mysql_data` debe permanecer intacto.
+
+```powershell
+cd C:\Digiturno
+
+# 1. Descargar solo las imágenes de la aplicación
+docker compose -f docker-compose.server.yml --env-file .env pull digiturno-backend digiturno-frontend
+
+# 2. Recrear solo backend y frontend; la base y el backup no se tocan
+docker compose -f docker-compose.server.yml --env-file .env up -d --no-deps --force-recreate digiturno-backend digiturno-frontend
+
+# 3. Comprobar estado
+docker compose -f docker-compose.server.yml --env-file .env ps
+```
+
+Este flujo no borra la base, no elimina el volumen y no reinicia MySQL. El
+backend solo valida y aplica las migraciones pendientes de Flyway; en esta
+versión no hay migraciones nuevas.
 
 ### 11.6 Volver a una versión anterior
 

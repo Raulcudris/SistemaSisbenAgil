@@ -76,7 +76,7 @@ services:
   digiturno-backend:
     build:
       context: ./backend
-    image: ${DOCKERHUB_USERNAME:-raulcudris}/digiturno-backend:${BACKEND_VERSION:-2.0.2}
+    image: ${DOCKERHUB_USERNAME:-raulcudris}/digiturno-backend:${BACKEND_VERSION:-2.0.3}
     container_name: digiturno-backend
     restart: unless-stopped
     environment:
@@ -113,7 +113,7 @@ services:
       args:
         # Nombre del servicio backend dentro de la red de Docker.
         API_INTERNAL_URL: http://digiturno-backend:8088
-    image: ${DOCKERHUB_USERNAME:-raulcudris}/digiturno-frontend:${FRONTEND_VERSION:-2.0.2}
+    image: ${DOCKERHUB_USERNAME:-raulcudris}/digiturno-frontend:${FRONTEND_VERSION:-2.0.3}
     container_name: digiturno-frontend
     restart: unless-stopped
     environment:
